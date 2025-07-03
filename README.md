@@ -1,10 +1,9 @@
-<<<<<<< HEAD
-# 🐶 Pet Shelter & Adoption System
+# 🐶 Pet Shelter & Adoption System  
 
 A **full-featured web application** for managing adoptable pets, adoption requests, and shelter data.  
 Built with **PHP, Supabase, HTML, CSS, and JavaScript**, this project combines **frontend design, backend logic, and cloud database integration** to create a realistic pet adoption platform.  
 =======
-# 🐾 Pet Shelter
+# 🐾 Pet Shelter  
 
 **Pet Shelter** is a web-based shelter and adoption management platform designed to showcase pets, manage shelter data, and demonstrate a complete frontend–backend integrated project. The system focuses on clarity, structure, and real-world applicability for academic and portfolio use.
 
@@ -147,4 +146,3 @@ This project is currently **unlicensed**. A license file can be added if distrib
 
 This project is maintained for learning, demonstration, and portfolio purposes.
 
->>>>>>> 862e6c01aabcc2f69d49697481f1c4f9567bf3d4
