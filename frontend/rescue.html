@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Rescue - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Shelter</div>
+                <div class="nav-links" id="nav-links"></div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2>Report a Rescue</h2>
+        <div class="auth-container" style="max-width: 800px;">
+            <form id="rescueForm">
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="location" required>
+                </div>
+                <div class="form-group">
+                    <label>Pet Name (Unknown if stray)</label>
+                    <input type="text" id="name" placeholder="E.g. Unknown">
+                </div>
+                <div class="form-group">
+                    <label>Animal Type</label>
+                    <input type="text" id="type" required placeholder="E.g. Dog, Cat">
+                </div>
+                <div class="form-group">
+                    <label>Upload Photo</label>
+                    <input type="file" id="image" required accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="desc" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Condition</label>
+                    <textarea id="cond" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="background-color:var(--danger)">Report & Add to Shelter</button>
+            </form>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn) window.location.href = 'login.html'; });
+
+        document.getElementById('rescueForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const res = await apiCall('misc.php?type=rescue', 'POST', formData);
+            if (res.success) {
+                showWarmModal('Thank You!', 'Your kind work helps us save lives! We have received your rescue report. 🚑', '🚑');
+                // Redirection handled by closeWarmModal
+            }
+        });
+    </script>
+</body>
+</html>

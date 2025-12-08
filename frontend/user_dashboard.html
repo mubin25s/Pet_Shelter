@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Shelter</div>
+                <div class="nav-links" id="nav-links"></div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1 id="welcome-msg">Welcome Back!</h1>
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>🐶 Adopt a Friend</h3>
+                <p>Browse our lovely pets waiting for a home.</p>
+                <br>
+                <a href="adopt.html" class="btn btn-primary">Browse Pets</a>
+            </div>
+            <div class="card">
+                <h3>🐱 Give for Adoption</h3>
+                <p>We'll find them a loving home.</p>
+                <br>
+                <a href="give_pet.html" class="btn btn-primary">Start Process</a>
+            </div>
+            <div class="card">
+                <h3>🚑 Report Rescue</h3>
+                <p>Found an injured animal?</p>
+                <br>
+                <a href="rescue.html" class="btn btn-primary">Report Now</a>
+            </div>
+            <div class="card">
+                <h3>💖 Donate</h3>
+                <p>Help us care for more animals.</p>
+                <br>
+                <a href="donate.html" class="btn btn-primary">Donate Funds</a>
+            </div>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+        checkSession().then(res => {
+            if (!res.loggedIn) window.location.href = 'login.html';
+            else document.getElementById('welcome-msg').innerText = `Welcome Back, ${res.user.name}!`;
+        });
+    </script>
+</body>
+</html>

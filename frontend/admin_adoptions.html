@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Adoptions - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Admin</div>
+                <div class="nav-links">
+                    <a href="admin_dashboard.html">Dashboard</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Pending Adoptions</h1>
+        <div id="requests-list"></div>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+
+        async function loadRequests() {
+            const list = await apiCall('adoptions.php?action=list_pending');
+            const container = document.getElementById('requests-list');
+            container.innerHTML = '';
+            
+            if(list.length === 0) container.innerHTML = '<p>No pending requests.</p>';
+
+            list.forEach(req => {
+                container.innerHTML += `
+                <div class="card" style="margin-bottom:20px;">
+                    <h3>For: ${req.pet_name} <small>by ${req.user_name} (${req.email})</small></h3>
+                    <div style="background:#fafafa; padding:10px; margin:10px 0;">
+                        <p><strong>Exp:</strong> ${req.experience}</p>
+                        <p><strong>Pets:</strong> ${req.other_pets}</p>
+                        <p><strong>Finance:</strong> ${req.financial_status}</p>
+                    </div>
+                    <button onclick="approve(${req.id}, ${req.pet_id})" class="btn" style="background:green; color:white;">Approve</button>
+                    <button onclick="reject(${req.id})" class="btn" style="background:red; color:white;">Reject</button>
+                </div>`;
+            });
+        }
+
+        async function approve(id, pet_id) {
+            if(!confirm('Approve adoption?')) return;
+            const res = await apiCall('adoptions.php?action=approve', 'POST', { id, pet_id });
+            if(res.success) loadRequests();
+        }
+
+        async function reject(id) {
+            if(!confirm('Reject application?')) return;
+            const res = await apiCall('adoptions.php?action=reject', 'POST', { id });
+            if(res.success) loadRequests();
+        }
+        
+        loadRequests();
+    </script>
+</body>
+</html>

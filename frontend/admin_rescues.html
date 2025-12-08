@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rescues - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Admin</div>
+                <div class="nav-links">
+                    <a href="admin_dashboard.html">Dashboard</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Rescue Reports</h1>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Location</th><th>Condition</th><th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="rescue-table"></tbody>
+            </table>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+
+        async function loadRescues() {
+            const list = await apiCall('misc.php?type=rescue');
+            const tbody = document.getElementById('rescue-table');
+            tbody.innerHTML = '';
+            list.forEach(r => {
+                tbody.innerHTML += `
+                <tr>
+                    <td>${r.location}</td>
+                    <td>${r.condition_desc}</td>
+                    <td style="color:${r.status === 'rescued' ? 'green' : 'red'}">${r.status.toUpperCase()}</td>
+                </tr>`;
+            });
+        }
+        loadRescues();
+    </script>
+</body>
+</html>

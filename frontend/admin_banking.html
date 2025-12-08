@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Banking - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Admin</div>
+                <div class="nav-links">
+                    <a href="admin_dashboard.html">Dashboard</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card" style="background:var(--primary-color); color:white; text-align:center;">
+            <h2>Balance</h2>
+            <h1 style="font-size:3rem;" id="balance">$0.00</h1>
+            <p>In: <span id="total-in"></span> | Out: <span id="total-out"></span></p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Add Expense</h3>
+                <form id="expenseForm">
+                    <div class="form-group"><label>Reason</label><input id="desc" required></div>
+                    <div class="form-group"><label>Amount</label><input id="amount" type="number" step="0.01" required></div>
+                    <button type="submit" class="btn btn-primary" style="background:var(--danger)">Record</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>Recent Activity</h3>
+                <div id="activity-list"></div>
+            </div>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+
+        async function loadFinance() {
+            const data = await apiCall('misc.php?type=donation');
+            document.getElementById('balance').innerText = '$' + data.balance.toFixed(2);
+            document.getElementById('total-in').innerText = '$' + data.total_donations;
+            document.getElementById('total-out').innerText = '$' + data.total_expenses;
+            
+            let html = '<h4>Recent Donations</h4>';
+            data.recent_donations.forEach(d => html += `<p>+$${d.amount} from ${d.name}</p>`);
+            html += '<br><h4>Recent Expenses</h4>';
+            data.recent_expenses.forEach(e => html += `<p>-$${e.amount} (${e.description})</p>`);
+            
+            document.getElementById('activity-list').innerHTML = html;
+        }
+
+        document.getElementById('expenseForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const data = {
+                description: document.getElementById('desc').value,
+                amount: document.getElementById('amount').value
+            };
+            await apiCall('misc.php?type=expense', 'POST', data);
+            loadFinance();
+            e.target.reset();
+        });
+        
+        loadFinance();
+    </script>
+</body>
+</html>

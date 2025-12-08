@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Adopt - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Shelter</div>
+                <div class="nav-links" id="nav-links"></div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Find Your New Best Friend 🐾</h1>
+        <div class="pet-grid" id="pet-container">Loading pets...</div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const pets = await apiCall('pets.php');
+            const container = document.getElementById('pet-container');
+            container.innerHTML = '';
+            
+            if (pets.length === 0) {
+                container.innerHTML = '<p>No pets available currently.</p>';
+                return;
+            }
+
+            pets.forEach(pet => {
+                let statusColor = 'status-green';
+                let statusText = 'Healthy';
+                if(pet.health_status === 'yellow') { statusColor = 'status-yellow'; statusText = 'Needs Care'; }
+                if(pet.health_status === 'red') { statusColor = 'status-red'; statusText = 'Critical'; }
+
+                let imgPath = pet.image;
+                if (!imgPath.startsWith('images/')) {
+                    imgPath = '../backend/' + imgPath;
+                }
+
+                const card = `
+                <div class='pet-card'>
+                    <img src='${imgPath}' class='pet-image' alt='${pet.name}'>
+                    <div class='pet-info'>
+                        <div style='display:flex; justify-content:space-between; align-items:center;'>
+                            <h2>${pet.name}</h2>
+                            <span class='status-badge ${statusColor}'>${statusText}</span>
+                        </div>
+                        <p>${pet.type}</p>
+                        <br>
+                        <a href='pet_details.html?id=${pet.id}' class='btn btn-primary' style='display:block; text-align:center;'>View Details</a>
+                    </div>
+                </div>`;
+                container.innerHTML += card;
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Give Pet - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Shelter</div>
+                <div class="nav-links" id="nav-links"></div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2>Give a Pet for Adoption</h2>
+        <div class="auth-container" style="max-width: 800px;">
+            <form id="givePetForm">
+                <div class="form-group">
+                    <label>Pet Name</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Type (Cat, Dog, etc.)</label>
+                    <input type="text" name="type" required>
+                </div>
+                <div class="form-group">
+                    <label>Pet Image</label>
+                    <input type="file" name="image" required accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label>History / Sickness</label>
+                    <textarea name="history" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Health Condition</label>
+                    <select name="health_status" required>
+                        <option value="green">Green (Healthy)</option>
+                        <option value="yellow">Yellow (Minor Issues)</option>
+                        <option value="red">Red (Serious Condition)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Vaccination Status</label>
+                    <input type="text" name="vaccine_status">
+                </div>
+                <div class="form-group">
+                    <label>Food Habits</label>
+                    <textarea name="food_habit" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn) window.location.href = 'login.html'; });
+
+        document.getElementById('givePetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const res = await apiCall('pets.php', 'POST', formData);
+            if (res.success) {
+                alert('Pet submitted successfully!');
+                window.location.href = 'user_dashboard.html';
+            } else {
+                alert('Error: ' + res.error);
+            }
+        });
+    </script>
+</body>
+</html>

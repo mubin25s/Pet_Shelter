@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pet Details - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .detail-container { display: flex; gap: 40px; margin-top: 40px; background: white; padding: 30px; border-radius: 20px; }
+        .detail-img { width: 50%; height: 400px; object-fit: cover; border-radius: 15px; }
+        .detail-info { flex: 1; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Shelter</div>
+                <div class="nav-links" id="nav-links"></div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container" id="detail-content">Loading...</div>
+
+    <script src="js/app.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            const pets = await apiCall('pets.php'); // In real app, get by ID API is better, filtering client side for now
+            const pet = pets.find(p => p.id == id);
+
+            if (!pet) {
+                document.getElementById('detail-content').innerText = 'Pet not found.';
+                return;
+            }
+
+            let imgPath = pet.image;
+            if (!imgPath.startsWith('images/')) {
+                imgPath = '../backend/' + imgPath;
+            }
+
+            const html = `
+            <div class="detail-container">
+                <img src="${imgPath}" class="detail-img">
+                <div class="detail-info">
+                    <h1>${pet.name} <small>(${pet.type})</small></h1>
+                    <p>Status: ${pet.health_status.toUpperCase()}</p>
+                    <br>
+                    <p>${pet.description}</p>
+                    <br>
+                    <div style="background: #fafafa; padding: 15px; border-radius: 10px;">
+                        <p><strong>Vaccination:</strong> ${pet.vaccine_status}</p>
+                        <p><strong>History:</strong> ${pet.history}</p>
+                        <p><strong>Food:</strong> ${pet.food_habit}</p>
+                    </div>
+                    <br>
+                    <button onclick="adopt(${pet.id})" class="btn btn-primary">Adopt Me</button>
+                    <div id="adopt-form" style="display:none; margin-top:20px;">
+                        <h3>Adoption Application</h3>
+                        <form id="applicationForm">
+                            <input type="hidden" id="pet_id" value="${pet.id}">
+                            <div class="form-group"><label>Experience</label><input id="exp" required></div>
+                            <div class="form-group"><label>Other Pets</label><input id="other" required></div>
+                            <div class="form-group"><label>Financial Status</label><select id="fin"><option>Stable</option><option>Unsure</option></select></div>
+                            <button type="submit" class="btn btn-primary">Submit Application</button>
+                        </form>
+                    </div>
+                </div>
+            </div>`;
+            document.getElementById('detail-content').innerHTML = html;
+
+            document.getElementById('applicationForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = {
+                    pet_id: document.getElementById('pet_id').value,
+                    experience: document.getElementById('exp').value,
+                    other_pets: document.getElementById('other').value,
+                    financial_status: document.getElementById('fin').value
+                };
+                const res = await apiCall('adoptions.php?action=submit', 'POST', data);
+                if (res.success) alert('Application Submitted!');
+                else alert('Error: ' + res.error);
+            });
+        });
+
+        async function adopt(id) {
+            const res = await checkSession();
+            if (!res.loggedIn) window.location.href = 'login.html';
+            else document.getElementById('adopt-form').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
