@@ -68,10 +68,11 @@
             const formData = new FormData(e.target);
             const res = await apiCall('pets.php', 'POST', formData);
             if (res.success) {
-                alert('Pet submitted successfully!');
-                window.location.href = 'user_dashboard.html';
+                showWarmModal('Success', 'Pet submitted successfully! 🐾', '🎉', () => {
+                    window.location.href = 'index.html';
+                });
             } else {
-                alert('Error: ' + res.error);
+                showWarmModal('Error', 'Failed to submit pet.', '❌');
             }
         });
     </script>

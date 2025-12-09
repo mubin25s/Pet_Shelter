@@ -49,15 +49,17 @@
         }
 
         async function approve(id, pet_id) {
-            if(!confirm('Approve adoption?')) return;
-            const res = await apiCall('adoptions.php?action=approve', 'POST', { id, pet_id });
-            if(res.success) loadRequests();
+            showConfirmModal('Approve Adoption', 'Approve adoption?', async () => {
+                const res = await apiCall('adoptions.php?action=approve', 'POST', { id, pet_id });
+                if(res.success) loadRequests();
+            }, 'Approve', 'Cancel');
         }
 
         async function reject(id) {
-            if(!confirm('Reject application?')) return;
-            const res = await apiCall('adoptions.php?action=reject', 'POST', { id });
-            if(res.success) loadRequests();
+            showConfirmModal('Reject Application', 'Reject application?', async () => {
+                const res = await apiCall('adoptions.php?action=reject', 'POST', { id });
+                if(res.success) loadRequests();
+            }, 'Reject', 'Cancel');
         }
         
         loadRequests();

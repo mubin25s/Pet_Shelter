@@ -2,12 +2,12 @@
 require_once __DIR__ . '/config/db.php';
 
 try {
-    // 1. Fetch all pet IDs
+    // 1. Grab all the pet IDs
     $stmt = $pdo->query("SELECT id FROM pets");
     $petIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     if (count($petIds) < 35) { // Need at least 21+12+1 = 34, let's aim for 50
-        echo "Insufficient pets found (" . count($petIds) . "). Seeding database with dummy pets...\n";
+        echo "Not enough pets (" . count($petIds) . "). Making up some dummy pets...\n";
         
         $types = ['Dog', 'Cat', 'Rabbit', 'Hamster', 'Bird'];
         $names = ['Bella', 'Max', 'Charlie', 'Luna', 'Rocky', 'Buddy', 'Coco', 'Milo', 'Daisy', 'Leo'];
@@ -15,28 +15,34 @@ try {
         $insertStmt = $pdo->prepare("INSERT INTO pets (name, type, health_status, status, description) VALUES (?, ?, 'green', 'available', 'A lovely pet looking for a home.')");
         
         $needed = 50 - count($petIds);
+        
+        // Ensure we don't run out of names or repeat them too easily if possible, 
+        // but for this simple seed, just picking random ones is better than "Luna 1"
         for ($i = 0; $i < $needed; $i++) {
-            $name = $names[array_rand($names)] . " " . ($i + 1);
+            $name = $names[array_rand($names)]; // Just pick a random name. 
+            // In a real app we'd check for uniqueness against DB, but for this seed script simple random is fine.
+            // Or we could shuffle names array and pop.
+            
             $type = $types[array_rand($types)];
             $insertStmt->execute([$name, $type]);
         }
         
-        // Re-fetch IDs
+        // Get the list again
         $stmt = $pdo->query("SELECT id FROM pets");
         $petIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        echo "Seeded. Total pets: " . count($petIds) . "\n";
+        echo "All set. Total pets: " . count($petIds) . "\n";
     } else {
         echo "Found " . count($petIds) . " pets.\n";
     }
 
-    // 2. Shuffle to randomize
+    // 2. Mix them up
     shuffle($petIds);
 
-    // 3. Determine distribution counts
+    // 3. Figure out who gets what status
     $total = count($petIds);
     $healthyCount = 21;
     $needsHelpCount = 12;
-    // The rest will be critical
+    // The rest are in bad shape
     
     $healthyIds = array_slice($petIds, 0, $healthyCount);
     $needsHelpIds = array_slice($petIds, $healthyCount, $needsHelpCount);
@@ -47,7 +53,7 @@ try {
     echo "Needs Help (Yellow): " . count($needsHelpIds) . " (Target: 12)\n";
     echo "Critical (Red): " . count($criticalIds) . " (Rest)\n";
 
-    // 4. Update Database
+    // 4. Update the Database
     $pdo->beginTransaction();
 
     if (!empty($healthyIds)) {
@@ -69,9 +75,9 @@ try {
     }
 
     $pdo->commit();
-    echo "Update complete.\n";
+    echo "Done updating.\n";
 
-    // 5. Verify
+    // 5. Double check
     $stmt = $pdo->query("SELECT health_status, COUNT(*) as count FROM pets GROUP BY health_status");
     $stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
     

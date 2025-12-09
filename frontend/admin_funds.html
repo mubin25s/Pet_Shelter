@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fund Management - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Admin</div>
+                <div class="nav-links">
+                    <a href="admin_dashboard.html">Dashboard</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card" style="background:var(--primary-color); color:white; text-align:center;">
+            <h2>Total Funds</h2>
+            <h1 style="font-size:3rem;" id="balance">$0.00</h1>
+            <p>In: <span id="total-in"></span> | Out: <span id="total-out"></span></p>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); align-items: start;">
+            <div class="card">
+                <h3>➕ Add Funds</h3>
+                <form id="addFundForm">
+                    <div class="form-group"><label>Source / Reason</label><input id="fund-desc" required placeholder="e.g. Government Grant, Personal Injection"></div>
+                    <div class="form-group"><label>Amount ($)</label><input id="fund-amount" type="number" step="0.01" required></div>
+                    <button type="submit" class="btn btn-primary" style="background:var(--success)">Add Funds</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>➖ Add Expense</h3>
+                <form id="expenseForm">
+                    <div class="form-group"><label>Reason</label><input id="desc" required placeholder="e.g. Pet Food, Vet Bills"></div>
+                    <div class="form-group"><label>Amount ($)</label><input id="amount" type="number" step="0.01" required></div>
+                    <button type="submit" class="btn btn-primary" style="background:var(--danger)">Record Expense</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Recent Activity</h3>
+                <div id="activity-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </div>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+
+        async function loadFinance() {
+            const data = await apiCall('misc.php?type=donation'); 
+            document.getElementById('balance').innerText = '$' + data.balance.toFixed(2);
+            document.getElementById('total-in').innerText = '$' + data.total_donations;
+            document.getElementById('total-out').innerText = '$' + data.total_expenses;
+            
+            let html = '<div><h4>Incoming ⬇️</h4>';
+            data.recent_donations.forEach(d => html += `<p style="color:var(--success); margin:5px 0; font-size:0.9rem;">+$${d.amount} - ${d.name}</p>`);
+            html += '</div><div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;"><h4>Outgoing ⬆️</h4>';
+            data.recent_expenses.forEach(e => html += `<p style="color:var(--danger); margin:5px 0; font-size:0.9rem;">-$${e.amount} - ${e.description}</p>`);
+            html += '</div>';
+            
+            document.getElementById('activity-list').innerHTML = html;
+        }
+
+        // Add Expense
+        document.getElementById('expenseForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const data = {
+                description: document.getElementById('desc').value,
+                amount: document.getElementById('amount').value
+            };
+            const res = await apiCall('misc.php?type=expense', 'POST', data);
+            handleRes(res, e.target);
+        });
+
+        // Add Funds (Technically a "donation" from Admin internally)
+        document.getElementById('addFundForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            
+            // We can reuse the donation endpoint but maybe pass a special flag or just treat it as a donation with name "Admin Fund"
+            // Or use 'misc.php?type=donation' POST. The backend expects 'name' and 'amount'.
+            const data = {
+                name: document.getElementById('fund-desc').value + " (Admin Fund)",
+                amount: document.getElementById('fund-amount').value
+            };
+            
+            // Reusing donation endpoint for "In" money. 
+            // Ideally we'd have a separate 'fund' type but reusing logic keeps complexity low as requested.
+            const res = await apiCall('misc.php?type=donation', 'POST', data);
+            handleRes(res, e.target);
+        });
+
+        function handleRes(res, form) {
+            if (res.success) {
+                // alert(res.message || 'Success');
+                showWarmModal('Success', res.message || 'Transaction recorded.', '💰');
+                loadFinance();
+                form.reset();
+            } else {
+                showWarmModal('Error', res.error, '❌');
+            }
+        }
+        
+        loadFinance();
+    </script>
+</body>
+</html>

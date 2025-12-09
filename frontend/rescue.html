@@ -61,11 +61,27 @@
 
         document.getElementById('rescueForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const res = await apiCall('misc.php?type=rescue', 'POST', formData);
+            
+            const formData = new FormData();
+            formData.append('reporter_name', document.getElementById('reporter_name').value);
+            formData.append('reporter_address', document.getElementById('reporter_address').value);
+            formData.append('location', document.getElementById('location').value);
+            formData.append('name', document.getElementById('name').value);
+            formData.append('type', document.getElementById('type').value);
+            formData.append('image', document.getElementById('image').files[0]);
+            formData.append('description', document.getElementById('desc').value + "\nCondition: " + document.getElementById('cond').value);
+            
+            const res = await apiCall('misc.php?type=rescue&action=report', 'POST', formData);
+            
             if (res.success) {
-                showWarmModal('Thank You!', 'Your kind work helps us save lives! We have received your rescue report. 🚑', '🚑');
-                // Redirection handled by closeWarmModal
+                showWarmModal(
+                    'Warm Thank You! 💖', 
+                    'Your kind submission has been processed. Thank you for helping us save lives! 🐾', 
+                    '🐶',
+                    () => { window.location.href = 'index.html'; }
+                );
+            } else {
+                showWarmModal('Error', 'Something went wrong: ' + res.error, '❌');
             }
         });
     </script>

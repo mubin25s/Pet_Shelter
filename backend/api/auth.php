@@ -1,6 +1,16 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '', // specific domain can cause issues on localhost
+    'secure' => false,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
-header("Access-Control-Allow-Origin: *");
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+header("Access-Control-Allow-Origin: $origin");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header('Content-Type: application/json');
@@ -12,17 +22,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-// Buffer output to catch warnings
+// Buffer output to catch unnecessary warnings
 ob_start();
 
 require_once '../config/db.php';
 
-// Clear buffer before sending JSON
+// Clear the buffer before sending fresh JSON
 ob_clean();
 
 $action = $_GET['action'] ?? '';
 
 if ($action == 'register' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Handling new user registration
     $data = json_decode(file_get_contents("php://input"), true);
     $name = $data['name'];
     $email = $data['email'];

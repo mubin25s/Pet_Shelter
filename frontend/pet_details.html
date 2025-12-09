@@ -83,8 +83,8 @@
                     financial_status: document.getElementById('fin').value
                 };
                 const res = await apiCall('adoptions.php?action=submit', 'POST', data);
-                if (res.success) alert('Application Submitted!');
-                else alert('Error: ' + res.error);
+                if (res.success) showWarmModal('Success', 'Application Submitted!', '🎉');
+                else showWarmModal('Error', 'Error: ' + res.error, '❌');
             });
         });
 

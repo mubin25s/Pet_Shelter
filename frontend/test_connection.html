@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Connection Diagnostic</title>
+    <style>body{font-family:sans-serif;padding:20px;}</style>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <p>Testing connection to backend...</p>
+    <div id="results"></div>
+    <script>
+        const log = (msg, color='black') => {
+            document.getElementById('results').innerHTML += `<div style="color:${color};margin:5px 0;">${msg}</div>`;
+        };
+
+        async function test() {
+            // Check the dedicated server port
+            const relativePath = 'http://localhost:8000/backend/api/auth.php?action=check_session';
+            log(`Attempting fetch: ${relativePath}`);
+            
+            try {
+                const res = await fetch(relativePath);
+                log(`HTTP Status: ${res.status}`, res.ok ? 'green' : 'red');
+                const text = await res.text();
+                log(`Response Body: ${text.substring(0, 100)}...`);
+                
+                try {
+                    const json = JSON.parse(text);
+                    log('JSON Parsed Successfully. Backend is Working!', 'green');
+                } catch(e) {
+                    log('Failed to parse JSON. PHP Error likely.', 'red');
+                }
+
+            } catch (e) {
+                log(`Fetch Error: ${e.message}`, 'red');
+                log(`Likely cause: File opened directly (file://) or XAMPP not running.`, 'orange');
+            }
+        }
+        test();
+    </script>
+</body>
+</html>

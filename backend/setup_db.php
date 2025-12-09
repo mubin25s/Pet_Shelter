@@ -2,7 +2,7 @@
 require_once 'config/db.php';
 
 try {
-    // Users
+    // Let's create the users table
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -12,7 +12,7 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Pets
+    // Table for our furry friends
     $pdo->exec("CREATE TABLE IF NOT EXISTS pets (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -28,7 +28,7 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Adoptions
+    // Who adopted who?
     $pdo->exec("CREATE TABLE IF NOT EXISTS adoptions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
@@ -40,7 +40,7 @@ try {
         request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Rescues
+    // Rescue reports go here
     $pdo->exec("CREATE TABLE IF NOT EXISTS rescues (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
@@ -51,7 +51,7 @@ try {
         report_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Donations
+    // Tracking the donations
     $pdo->exec("CREATE TABLE IF NOT EXISTS donations (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT,
@@ -59,7 +59,7 @@ try {
         donation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Expenses
+    // Tracking what we spend
     $pdo->exec("CREATE TABLE IF NOT EXISTS expenses (
         id INT AUTO_INCREMENT PRIMARY KEY,
         description VARCHAR(255) NOT NULL,
@@ -67,7 +67,7 @@ try {
         expense_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Seed Admin
+    // Make an admin if there isn't one
     $admin_email = 'admin@paws.com';
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
     $stmt->execute([$admin_email]);

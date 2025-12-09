@@ -14,7 +14,7 @@
                     <a href="index.html">View Site</a>
                     <a href="admin_pets.html">Pets</a>
                     <a href="admin_adoptions.html">Adoptions</a>
-                    <a href="admin_banking.html">Banking</a>
+                    <a href="admin_funds.html">Fund</a>
                     <a href="#" onclick="logout()">Logout</a>
                 </div>
             </nav>
@@ -35,9 +35,9 @@
                 <a href="admin_adoptions.html" class="btn btn-primary">Review</a>
             </div>
             <div class="card">
-                <h3>💰 Total Donations</h3>
+                <h3>💰 Current Balance</h3>
                 <p style="font-size:2rem; font-weight:bold;" id="count-money">-</p>
-                <a href="admin_banking.html" class="btn btn-primary">Finance</a>
+                <a href="admin_funds.html" class="btn btn-primary">Fund</a>
             </div>
             <div class="card">
                 <h3>🚑 Rescue Reports</h3>
@@ -49,10 +49,9 @@
     <script>
         checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
         
-        // Fetch Stats (Using misc API for finance, others need separate counts or just fetch list length for now)
-        // For simplicity:
+        // Fetch Stats
         apiCall('misc.php?type=donation').then(res => {
-            document.getElementById('count-money').innerText = '$' + res.total_donations;
+            document.getElementById('count-money').innerText = '$' + res.balance;
         });
         apiCall('pets.php').then(res => {
             document.getElementById('count-pets').innerText = res.length;

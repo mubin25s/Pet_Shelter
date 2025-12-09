@@ -20,18 +20,76 @@
     </header>
 
     <div class="container">
-        <h1>Manage Pets</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h1>Manage Pets</h1>
+            <button onclick="openAddModal()" class="btn btn-primary">➕ Add New Pet</button>
+        </div>
+        
         <div class="card">
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th><th>Name</th><th>Type</th><th>Status</th><th>Health</th><th>Action</th>
+                        <th>ID</th><th>Image</th><th>Name</th><th>Type</th><th>Status</th><th>Health</th><th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="pet-table"></tbody>
             </table>
         </div>
     </div>
+
+    <!-- Add Pet Modal -->
+    <div id="add-pet-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:380px; text-align:left; padding:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 class="modal-title" style="margin:0; font-size:1.3rem;">Add New Pet 🐾</h3>
+                <button onclick="closeAddModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+            </div>
+            
+            <form id="add-pet-form" onsubmit="submitNewPet(event)">
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:0.85rem;">Pet Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Luna" style="padding:6px; font-size:0.9rem;">
+                </div>
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:0.85rem;">Type</label>
+                    <input type="text" name="type" required placeholder="e.g. Cat, Dog" style="padding:6px; font-size:0.9rem;">
+                </div>
+                 <div style="display:flex; gap:10px;">
+                     <div class="form-group" style="margin-bottom:8px; flex:1;">
+                        <label style="font-size:0.85rem;">Health Status</label>
+                        <select name="health_status" style="padding:6px; font-size:0.9rem;">
+                            <option value="green">Healthy (Green)</option>
+                            <option value="yellow">Needs Help (Yellow)</option>
+                            <option value="red">Critical (Red)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px; flex:1;">
+                        <label style="font-size:0.85rem;">Vaccinated</label>
+                        <select name="vaccine_status" style="padding:6px; font-size:0.9rem;">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Hidden defaults -->
+                <input type="hidden" name="history" value="New rescue">
+                <input type="hidden" name="food_habit" value="Standard">
+                
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:0.85rem;">Description</label>
+                    <textarea name="description" required placeholder="Describe the pet..." style="height:60px; padding:6px; font-size:0.9rem;"></textarea>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label style="font-size:0.85rem;">Upload Photo</label>
+                    <input type="file" name="image" accept="image/*" required style="font-size:0.8rem;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; font-size:0.9rem;">Add Pet</button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/app.js"></script>
     <script>
         checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
@@ -40,25 +98,59 @@
             const pets = await apiCall('pets.php');
             const tbody = document.getElementById('pet-table');
             tbody.innerHTML = '';
+            
+            if(!pets || pets.error) return;
+
             pets.forEach(pet => {
+                // Fix image path for display
+                let imgPath = pet.image;
+                if (imgPath && !imgPath.startsWith('http') && !imgPath.startsWith('../')) {
+                     imgPath = '../backend/' + imgPath;
+                }
+
                 tbody.innerHTML += `
                 <tr>
                     <td>${pet.id}</td>
+                    <td><img src="${imgPath}" style="width:50px; height:50px; object-fit:cover; border-radius:50%;"></td>
                     <td>${pet.name}</td>
                     <td>${pet.type}</td>
                     <td>${pet.status}</td>
-                    <td>${pet.health_status}</td>
+                    <td><span class="status-badge status-${pet.health_status}">${pet.health_status}</span></td>
                     <td>
-                        <button onclick="deletePet(${pet.id})" class="btn" style="background:red; color:white; padding:5px 10px;">Delete</button>
+                        <button onclick="deletePet(${pet.id})" class="btn" style="background:#dc3545; color:white; padding:5px 10px; font-size:0.8rem;">Delete</button>
                     </td>
                 </tr>`;
             });
         }
         
         async function deletePet(id) {
-            if(confirm('Are you sure?')) {
+            showConfirmModal('Delete Pet', 'Are you sure you want to delete this pet?', async () => {
                 await apiCall('pets.php?id=' + id, 'DELETE');
                 loadPets();
+            }, 'Delete', 'Cancel');
+        }
+
+        function openAddModal() {
+            document.getElementById('add-pet-modal').classList.add('active');
+        }
+
+        function closeAddModal() {
+            document.getElementById('add-pet-modal').classList.remove('active');
+        }
+
+        async function submitNewPet(e) {
+            e.preventDefault();
+            const form = document.getElementById('add-pet-form');
+            const formData = new FormData(form);
+
+            const res = await apiCall('pets.php', 'POST', formData);
+            if (res.success) {
+                closeAddModal();
+                form.reset();
+                showWarmModal('Success', 'New pet added successfully! 🐾', '🎉');
+                loadPets();
+            } else {
+                showWarmModal('Error', 'Failed to add pet: ' + res.error, '❌');
             }
         }
         

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Adopt - Paws Shelter</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/wizard.css">
 </head>
 <body>
     <header>
@@ -21,44 +22,389 @@
     </div>
 
     <script src="js/app.js"></script>
+<!-- Pet Details Modal -->
+    <div id="pet-details-modal" class="modal-overlay">
+        <div class="modal-content pet-details-modal">
+            <button class="close-modal" onclick="closePetModal()">×</button>
+            <div id="pet-modal-body" class="pet-details-grid">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+
     <script>
-        window.addEventListener('DOMContentLoaded', async () => {
-            const pets = await apiCall('pets.php');
+        checkSession().then(res => {
+            if(res.loggedIn) window.currentUser = res.user;
+        });
+        window.allPets = []; // Store pets globally
+
+        async function loadPets() {
             const container = document.getElementById('pet-container');
-            container.innerHTML = '';
+            const pets = await apiCall('pets.php');
+            window.allPets = pets;
             
-            if (pets.length === 0) {
-                container.innerHTML = '<p>No pets available currently.</p>';
+            if (!pets || pets.length === 0) {
+                container.innerHTML = '<p style="text-align:center; width:100%;">No pets available for adoption right now. Check back later!</p>';
                 return;
             }
 
+            container.innerHTML = '';
             pets.forEach(pet => {
-                let statusColor = 'status-green';
-                let statusText = 'Healthy';
-                if(pet.health_status === 'yellow') { statusColor = 'status-yellow'; statusText = 'Needs Care'; }
-                if(pet.health_status === 'red') { statusColor = 'status-red'; statusText = 'Critical'; }
-
+                const card = document.createElement('div');
+                card.className = 'pet-card';
+                // Handle different image paths
                 let imgPath = pet.image;
-                if (!imgPath.startsWith('images/')) {
-                    imgPath = '../backend/' + imgPath;
+                if (imgPath && !imgPath.startsWith('http') && !imgPath.startsWith('../')) {
+                     imgPath = '../backend/' + imgPath;
+                }
+                
+                // Text and Color for status
+                let statusText = 'Healthy';
+                let statusBg = '#28a745'; 
+                let statusColor = 'white';
+
+                if(pet.health_status === 'yellow') {
+                    statusText = 'Needs Help';
+                    statusBg = '#ffc107'; 
+                    statusColor = '#333';
+                }
+                if(pet.health_status === 'red') {
+                    statusText = 'Critical';
+                    statusBg = '#dc3545'; 
+                    statusColor = 'white';
                 }
 
-                const card = `
-                <div class='pet-card'>
-                    <img src='${imgPath}' class='pet-image' alt='${pet.name}'>
-                    <div class='pet-info'>
-                        <div style='display:flex; justify-content:space-between; align-items:center;'>
-                            <h2>${pet.name}</h2>
-                            <span class='status-badge ${statusColor}'>${statusText}</span>
-                        </div>
-                        <p>${pet.type}</p>
-                        <br>
-                        <a href='pet_details.html?id=${pet.id}' class='btn btn-primary' style='display:block; text-align:center;'>View Details</a>
+                card.innerHTML = `
+                    <div style="height:200px; overflow:hidden;">
+                        <img src="${imgPath}" alt="${pet.name}" style="width:100%; height:100%; object-fit:cover;">
                     </div>
-                </div>`;
-                container.innerHTML += card;
+                    <div class="pet-info" style="padding:15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <h3 style="margin:0;">${pet.name}</h3>
+                            <span style="padding:4px 12px; border-radius:20px; background-color:${statusBg}; color:${statusColor}; font-size:0.8rem; font-weight:bold;">
+                                ${statusText}
+                            </span>
+                        </div>
+                        <p class="type" style="color:#666; font-size:0.9rem; margin-bottom:10px;">${pet.type}</p>
+                        
+                        <p style="font-size:0.9rem; color:#555; height:45px; overflow:hidden; margin-bottom:10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${pet.description || 'No description available.'}</p>
+                        <button onclick="viewDetails('${pet.id}')" class="btn btn-primary" style="width:100%;">View Details</button>
+                    </div>
+                `;
+                container.appendChild(card);
             });
-        });
+        }
+
+        function viewDetails(id) {
+            const pet = window.allPets.find(p => p.id == id);
+            if (!pet) return;
+
+            const modal = document.getElementById('pet-details-modal');
+            const body = document.getElementById('pet-modal-body');
+
+            let imgPath = pet.image;
+            if (imgPath && !imgPath.startsWith('http') && !imgPath.startsWith('../')) {
+                    imgPath = '../backend/' + imgPath;
+            }
+
+            body.innerHTML = `
+                <div class="pet-details-image">
+                    <img src="${imgPath}" alt="${pet.name}">
+                </div>
+                <div class="pet-details-content">
+                    <div class="pet-details-header">
+                        <h2 style="font-size:2.5rem; color:var(--primary-color);">${pet.name}</h2>
+                        <span class="status-badge" style="background-color:${getStatusColor(pet.health_status).bg}; color:${getStatusColor(pet.health_status).text}">
+                            ${pet.health_status.toUpperCase()}
+                        </span>
+                    </div>
+
+                    <div class="pet-details-info">
+                        <p><strong>Type:</strong> ${pet.type}</p>
+                        <p><strong>Age:</strong> ${pet.age || 'Unknown'}</p>
+                        <p><strong>Vaccinated:</strong> ${pet.vaccinated ? 'Yes ✅' : 'No ❌'}</p>
+                        <p><strong>Description:</strong> <br>${pet.description || 'No description provided.'}</p>
+                    </div>
+
+                    <div id="adopt-action-area">
+                        <!-- Action button injected via JS -->
+                    </div>
+                </div>
+            `;
+            
+            const actionArea = body.querySelector('#adopt-action-area');
+            
+            // Logic:
+            // 1. Admin -> Admin Dashboard
+            // 2. Guest -> Login to Adopt
+            // 3. User -> Adopt Me
+            
+            if (window.currentUser && window.currentUser.role === 'admin') {
+                actionArea.innerHTML = `
+                    <div style="text-align:center; padding:10px; background:#f8f9fa; border-radius:10px;">
+                        <p style="color:#666; margin-bottom:10px;">(Admin View)</p>
+                        <button onclick="openUpdateModal('${pet.id}')" class="btn btn-secondary" style="width:100%; padding: 12px; font-size: 1rem; background-color: #6c757d; border:none; color:white;">
+                            Update Details 🛠️
+                        </button>
+                    </div>
+                `;
+            } else if (!window.currentUser) {
+                // Not logged in
+                actionArea.innerHTML = `
+                    <button onclick="window.location.href='login.html'" class="btn btn-primary" style="width:100%; padding: 12px; font-size: 1rem;">
+                        Login to Adopt 🔒
+                    </button>
+                    <p style="text-align:center; font-size:0.8rem; color:#888; margin-top:5px;">You need to be registered.</p>
+                `;
+            } else {
+                // Logged in User
+                actionArea.innerHTML = `
+                    <button onclick="showAdoptForm('${pet.id}')" class="btn btn-primary" style="width:100%; padding: 12px; font-size: 1.1rem;">
+                        Adopt Me 🐾
+                    </button>
+                `;
+            }
+
+            modal.classList.add('active');
+        }
+
+        function openUpdateModal(id) {
+            const pet = window.allPets.find(p => p.id == id);
+            if (!pet) return;
+
+            const modalHtml = `
+            <div id="update-pet-modal" class="modal-overlay active">
+                <div class="modal-content" style="max-width:400px; text-align:left; padding:25px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 class="modal-title" style="margin:0; font-size:1.4rem;">Update ${pet.name} 📝</h3>
+                        <button onclick="document.getElementById('update-pet-modal').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+                    </div>
+                    
+                    <form id="edit-pet-form" onsubmit="handleUpdateSubmit(event, '${id}')">
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="font-size:0.9rem;">Name</label>
+                            <input type="text" name="name" value="${pet.name}" required style="padding:8px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="font-size:0.9rem;">Type</label>
+                            <input type="text" name="type" value="${pet.type}" required style="padding:8px;">
+                        </div>
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div class="form-group" style="flex:1;">
+                                <label style="font-size:0.9rem;">Health</label>
+                                <select name="health_status" style="padding:8px;">
+                                    <option value="green" ${pet.health_status === 'green' ? 'selected' : ''}>Healthy 🟢</option>
+                                    <option value="yellow" ${pet.health_status === 'yellow' ? 'selected' : ''}>Needs Help 🟡</option>
+                                    <option value="red" ${pet.health_status === 'red' ? 'selected' : ''}>Critical 🔴</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label style="font-size:0.9rem;">Vaccinated</label>
+                                <select name="vaccine_status" style="padding:8px;">
+                                    <option value="1" ${pet.vaccinated || pet.vaccine_status == 1 ? 'selected' : ''}>Yes ✅</option>
+                                    <option value="0" ${!pet.vaccinated && pet.vaccine_status != 1 ? 'selected' : ''}>No ❌</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="font-size:0.9rem;">Description</label>
+                            <textarea name="description" style="height:80px; padding:8px; font-size:0.9rem;">${pet.description || ''}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;">
+                            Save Changes 💾
+                        </button>
+                    </form>
+                </div>
+            </div>`;
+
+            // Append to body temporarily
+            const container = document.createElement('div');
+            container.innerHTML = modalHtml;
+            document.body.appendChild(container.firstElementChild);
+        }
+
+        async function handleUpdateSubmit(e, id) {
+            e.preventDefault();
+            await updatePetDetails(id); // Calls app.js function
+            document.getElementById('update-pet-modal').remove();
+            
+            // Refresh main modal details if still open
+            const pet = window.allPets.find(p => p.id == id);
+            // Re-fetch to be safe? loadPets does that. 
+            // For now, allow the success modal to trigger loadPets via callback in app.js
+            // But we also want to refresh the CURRENT viewDetails modal if it is open.
+            // Let's rely on the user closing and reopening or simple reload for now, 
+            // actually app.js loadPets() will update the grid, but not the open modal.
+            // Optimistic update:
+            const form = e.target;
+            pet.name = form.name.value;
+            pet.type = form.type.value;
+            pet.health_status = form.health_status.value;
+            pet.vaccine_status = form.vaccine_status.value;
+            pet.description = form.description.value;
+            
+            // Re-render
+            viewDetails(id);
+        }
+
+        let currentWizardStep = 1;
+        
+        async function showAdoptForm(id) {
+            const pet = window.allPets.find(p => p.id == id);
+            const userRes = await checkSession();
+            const userName = userRes.loggedIn ? userRes.user.name : "Guest";
+            currentWizardStep = 1;
+
+            const actionArea = document.getElementById('adopt-action-area');
+            actionArea.innerHTML = `
+                <div class="adopt-form-container" style="overflow:hidden;">
+                    <div class="wizard-progress">
+                        <div class="progress-dot active" id="dot-1"></div>
+                        <div class="progress-dot" id="dot-2"></div>
+                        <div class="progress-dot" id="dot-3"></div>
+                    </div>
+
+                    <div class="wizard-container">
+                        <!-- Step 1: Intro -->
+                        <div class="wizard-step active" id="step-1">
+                            <h3>Start Adoption 🐾</h3>
+                            <p>You are applying for <strong>${pet.name}</strong>.</p>
+                            
+                            <div class="form-group">
+                                <label>Applicant Name</label>
+                                <input type="text" value="${userName}" disabled style="background:#eee; cursor:not-allowed;">
+                            </div>
+                            <p style="font-size:0.8rem; margin-top:20px;">Let's get to know you better in the next steps.</p>
+
+                            <div class="wizard-nav">
+                                <button onclick="viewDetails('${id}')" class="btn" style="flex:1; background:#eee; color:#333;">Cancel</button>
+                                <button onclick="nextStep(2)" class="btn btn-primary" style="flex:1;">Next ➝</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Details -->
+                        <div class="wizard-step" id="step-2">
+                            <h3>About You 🏠</h3>
+                            
+                            <div class="form-group">
+                                <label>Pet Experience</label>
+                                <textarea id="adopt-experience" placeholder="History with pets..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Other Pets?</label>
+                                <input type="text" id="adopt-other-pets" placeholder="e.g. 1 Dog...">
+                            </div>
+
+                            <div class="wizard-nav">
+                                <button onclick="nextStep(1)" class="btn" style="flex:1; background:#eee; color:#333;">← Back</button>
+                                <button onclick="nextStep(3)" class="btn btn-primary" style="flex:1;">Next ➝</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Final -->
+                        <div class="wizard-step" id="step-3">
+                            <h3>Final Check 💰</h3>
+                            
+                            <div class="form-group">
+                                <label>Financial Status</label>
+                                <input type="text" id="adopt-financial" placeholder="Budget for care...">
+                            </div>
+
+                            <div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:15px; font-size:0.85rem; color:#666;">
+                                <p style="margin:0;">By submitting, you agree to care for <strong>${pet.name}</strong> responsibly.</p>
+                            </div>
+
+                            <div class="wizard-nav">
+                                <button onclick="nextStep(2)" class="btn" style="flex:1; background:#eee; color:#333;">← Back</button>
+                                <button onclick="submitAdoption('${id}')" class="btn btn-primary" style="flex:1;">Submit 🐾</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function nextStep(step) {
+            const current = document.getElementById(`step-${currentWizardStep}`);
+            const next = document.getElementById(`step-${step}`);
+            
+            // Validate if going forward
+            if (step > currentWizardStep) {
+                if(currentWizardStep === 2) {
+                    const exp = document.getElementById('adopt-experience').value;
+                    const other = document.getElementById('adopt-other-pets').value;
+                    if(!exp || !other) {
+                        showWarmModal('Missing Info', 'Please fill out all fields.', '⚠️');
+                        return;
+                    }
+                }
+            }
+
+            // Update Classes for Animation
+            if (step > currentWizardStep) {
+                current.classList.add('prev');
+                current.classList.remove('active');
+                next.classList.add('active');
+                next.classList.remove('prev');
+            } else {
+                current.classList.remove('active');
+                next.classList.remove('prev');
+                next.classList.add('active');
+            }
+
+            // Update Dots
+            document.querySelectorAll('.progress-dot').forEach((d, i) => {
+                d.classList.toggle('active', i + 1 === step);
+            });
+
+            currentWizardStep = step;
+        }
+
+        async function submitAdoption(id) {
+            // Check session
+            const session = await checkSession();
+            if (!session.loggedIn) {
+                showWarmModal('Login Required', 'You need to be logged in to adopt a pet.', '🔒');
+                return;
+            }
+
+            const experience = document.getElementById('adopt-experience').value;
+            const otherPets = document.getElementById('adopt-other-pets').value;
+            const financial = document.getElementById('adopt-financial').value;
+
+            if (!experience || !otherPets || !financial) {
+                showWarmModal('Missing Information', 'Please fill out all fields in the application.', '⚠️');
+                return;
+            }
+
+            const res = await apiCall('adoptions.php?action=submit', 'POST', {
+                pet_id: id,
+                experience: experience,
+                other_pets: otherPets,
+                financial_status: financial
+            });
+
+            if (res.success) {
+                closePetModal();
+                showWarmModal('Application Received!', 'Your adoption request has been submitted successfully. We will review it and contact you soon.', '🎉');
+            } else {
+                showWarmModal('Error', "Something went wrong: " + res.error, '❌');
+            }
+        }
+
+        function closePetModal() {
+            document.getElementById('pet-details-modal').classList.remove('active');
+        }
+
+        function getStatusColor(status) {
+            if (status === 'yellow') return { bg: '#ffc107', text: '#333' };
+            if (status === 'red') return { bg: '#dc3545', text: 'white' };
+            return { bg: '#28a745', text: 'white' };
+        }
+
+        loadPets();
     </script>
 </body>
 </html>

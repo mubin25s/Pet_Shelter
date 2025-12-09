@@ -460,3 +460,113 @@ td:last-child { border-right: 1px solid #eee; border-top-right-radius: 10px; bor
     margin-bottom: 30px;
 }
 
+/* Pet Details Modal Specifics */
+.pet-details-modal {
+    max-width: 800px;
+    width: 90%;
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
+}
+
+.pet-details-grid {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.pet-details-image {
+    flex: 1;
+    min-width: 300px;
+    background: #f0f0f0;
+    position: relative;
+}
+
+.pet-details-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    min-height: 400px;
+}
+
+.pet-details-content {
+    flex: 1;
+    min-width: 300px;
+    padding: 30px;
+}
+
+.pet-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.pet-tag {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.pet-details-info {
+    margin-bottom: 25px;
+}
+
+.pet-details-info p {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pet-details-info strong {
+    color: var(--text-color);
+    min-width: 100px;
+}
+
+.adopt-form-container {
+    background: #fdfdfd;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #eee;
+    margin-top: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Rely on global .form-group styles for consistency */
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    transition: 0.2s;
+    z-index: 10;
+}
+
+.close-modal:hover {
+    background: white;
+    transform: rotate(90deg);
+}
+
+@media (max-width: 768px) {
+    .pet-details-grid {
+        flex-direction: column;
+    }
+    .pet-details-image img {
+        height: 250px;
+        min-height: auto;
+    }
+}

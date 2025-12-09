@@ -19,12 +19,12 @@
     </header>
 
     <div class="container">
-        <h1>Rescue Reports</h1>
+        <h1>Rescue Reports (Pending Approval)</h1>
         <div class="card">
             <table>
                 <thead>
                     <tr>
-                        <th>Location</th><th>Condition</th><th>Status</th>
+                        <th>Image</th><th>Name</th><th>Type</th><th>Location</th><th>Condition</th><th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="rescue-table"></tbody>
@@ -39,15 +39,62 @@
             const list = await apiCall('misc.php?type=rescue');
             const tbody = document.getElementById('rescue-table');
             tbody.innerHTML = '';
+            
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No pending rescues.</td></tr>';
+                return;
+            }
+
             list.forEach(r => {
+                let imgPath = r.image;
+                if (imgPath && !imgPath.startsWith('http') && !imgPath.startsWith('../')) {
+                     imgPath = '../backend/' + imgPath;
+                }
+                
                 tbody.innerHTML += `
                 <tr>
+                    <td><img src="${imgPath || 'assets/default_pet.png'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;"></td>
+                    <td>${r.name}</td>
+                    <td>${r.type}</td>
                     <td>${r.location}</td>
-                    <td>${r.condition_desc}</td>
-                    <td style="color:${r.status === 'rescued' ? 'green' : 'red'}">${r.status.toUpperCase()}</td>
+                    <td style="max-width:200px; font-size:0.9rem;">${r.description}</td>
+                    <td>
+                        <button onclick="approveRescue(${r.id})" class="btn btn-primary" style="padding:5px 10px; font-size:0.8rem; margin-right:5px;">Approve ✅</button>
+                        <button onclick="rejectRescue(${r.id})" class="btn" style="background:#dc3545; color:white; padding:5px 10px; font-size:0.8rem;">Reject ❌</button>
+                    </td>
                 </tr>`;
             });
         }
+        
+        async function approveRescue(id) {
+            showConfirmModal('Approve Rescue?', "This will create a text 'Available' pet profile.", async () => {
+                const formData = new FormData();
+                formData.append('id', id);
+                
+                const res = await apiCall('misc.php?type=rescue&action=approve', 'POST', formData);
+                if (res.success) {
+                    showWarmModal('Success', 'Rescue approved and moved to active pets! 🐾', '🎉');
+                    loadRescues();
+                } else {
+                    showWarmModal('Error', res.error, '❌');
+                }
+            }, 'Approve', 'Cancel');
+        }
+
+        async function rejectRescue(id) {
+            showConfirmModal('Reject Rescue?', "Delete this rescue report permanently?", async () => {
+                const formData = new FormData();
+                formData.append('id', id);
+                
+                const res = await apiCall('misc.php?type=rescue&action=reject', 'POST', formData);
+                if (res.success) {
+                    loadRescues();
+                } else {
+                    showWarmModal('Error', res.error, '❌');
+                }
+            }, 'Reject', 'Cancel');
+        }
+
         loadRescues();
     </script>
 </body>
