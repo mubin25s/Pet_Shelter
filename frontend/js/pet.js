@@ -123,8 +123,9 @@ function updateNav(loggedIn, user) {
         <div class="dropdown">
             <a href="#">Adoption ▾</a>
             <div class="dropdown-content">
-                <a href="adopt.html">Adopt</a>
-                <a href="rescue.html">Give a Pet for Adoption</a>
+                <a href="adopt.html">Adopt a Pet</a>
+                <a href="give_pet.html">Give a Pet</a>
+                <a href="rescue.html">Report a Rescue</a>
             </div>
         </div>
     `;

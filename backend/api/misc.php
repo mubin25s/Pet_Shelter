@@ -33,7 +33,7 @@ if ($type == 'rescue') {
 
             // Handle Image Upload
             if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-                $uploadDir = '../../uploads/';
+                $uploadDir = '../uploads/';
                 if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
                 
                 $fileName = time() . '_' . basename($_FILES['image']['name']);
@@ -45,18 +45,7 @@ if ($type == 'rescue') {
             }
 
             $stmt = $pdo->prepare("INSERT INTO rescues (user_id, name, type, image, location, description, condition_desc) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            // parsing description vs condition from the frontend concatenated string is tricky if we don't separate them?
-            // The frontend sends: description = desc + "\nCondition: " + cond.
-            // Let's just use that whole thing as description for now, or split if needed. 
-            // Actually, the DB has `condition_desc` column. The frontend is concatenating.
-            // Let's improve frontend later? No, let's just save the concatenated to 'description' and maybe 'condition' as separate if passed.
-            // Wait, previous code: $stmt->execute([$uid, $loc, $desc, $data['condition']]); 
-            // My recent frontend update `formData.append('description', desc + "\nCondition: " + cond);` merged them.
-            // And `condition` was NOT appended separately.
-            // So `condition_desc` will be empty unless I fix frontend. 
-            // It's okay, I'll put the "Condition" text into `condition_desc` roughly or just empty.
-            // Actually, let's just stick to saving what we have.
-            
+           
             $stmt->execute([$_SESSION['user']['id'], $name, $type, $image, $location, $description, 'See description']);
             echo json_encode(["success" => true]);
         }

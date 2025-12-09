@@ -113,8 +113,7 @@
             
             // Load Settings
             try {
-                const response = await fetch('http://localhost/Pet_Shelter/backend/api/settings.php');
-                const data = await response.json();
+                const data = await apiCall('settings.php');
                 
                 if (data) {
                     const form = document.querySelector('#settings-form');
