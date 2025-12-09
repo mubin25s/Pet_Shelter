@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Site Settings</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            padding: 2rem;
+        }
+        .sidebar a {
+            display: block;
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 1rem;
+            border-bottom: 1px solid #34495e;
+        }
+        .sidebar a:hover {
+            background: #34495e;
+        }
+        .admin-content {
+            flex: 1;
+            padding: 2rem;
+            background: #f4f6f7;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group textarea {
+            height: 150px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3 style="margin-bottom: 2rem;">Admin Panel</h3>
+            <a href="admin_dashboard.html">Dashboard</a>
+            <a href="admin_pets.html">Manage Pets</a>
+            <a href="admin_adoptions.html">Adoptions</a>
+            <a href="admin_rescues.html">Rescue Requests</a>
+            <a href="admin_funds.html">Funds & Expenses</a>
+            <a href="admin_settings.html" style="background: #34495e;">Site Settings</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+
+        <!-- Content -->
+        <div class="admin-content">
+            <h2 class="section-title">Manage Site Settings</h2>
+            
+            <div class="card" style="background: white; padding: 2rem; border-radius: 8px;">
+                <form id="settings-form">
+                    <div class="form-group">
+                        <label>Shelter Location</label>
+                        <input type="text" name="shelter_location" placeholder="e.g. 123 Pet Lane" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Contact Email</label>
+                        <input type="email" name="contact_email" placeholder="email@example.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Contact Phone</label>
+                        <input type="text" name="contact_phone" placeholder="e.g. +1 234 567 890" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Founder Name</label>
+                        <input type="text" name="founder_name" placeholder="Name of the founder">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>About Us Text</label>
+                        <textarea name="about_text" placeholder="Write about your shelter..." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                    <span id="save-msg" style="margin-left: 1rem; display: none;"></span>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const res = await checkSession();
+            if(!res.loggedIn || res.user.role !== 'admin') {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Load Settings
+            try {
+                const response = await fetch('http://localhost/Pet_Shelter/backend/api/settings.php');
+                const data = await response.json();
+                
+                if (data) {
+                    const form = document.querySelector('#settings-form');
+                    form.shelter_location.value = data.shelter_location;
+                    form.contact_email.value = data.contact_email;
+                    form.contact_phone.value = data.contact_phone;
+                    form.founder_name.value = data.founder_name || '';
+                    form.about_text.value = data.about_text;
+                }
+            } catch (e) {
+                console.error("Failed to load settings");
+            }
+
+            // Save Settings
+            document.getElementById('settings-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const jsonData = Object.fromEntries(formData.entries());
+
+                const btn = e.target.querySelector('button');
+                const msg = document.getElementById('save-msg');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+                
+                const res = await apiCall('settings.php', 'POST', jsonData);
+                
+                btn.disabled = false;
+                btn.textContent = 'Save Settings';
+                msg.style.display = 'inline';
+                
+                if(res.success) {
+                    msg.style.color = 'green';
+                    msg.textContent = 'Settings saved successfully!';
+                    setTimeout(() => msg.style.display = 'none', 3000);
+                } else {
+                    msg.style.color = 'red';
+                    msg.textContent = 'Failed to save.';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

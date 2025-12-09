@@ -119,6 +119,7 @@ function updateNav(loggedIn, user) {
     
     let html = `
         <a href="index.html">Home</a>
+        <a href="about.html">About Us</a>
         <div class="dropdown">
             <a href="#">Adoption ▾</a>
             <div class="dropdown-content">

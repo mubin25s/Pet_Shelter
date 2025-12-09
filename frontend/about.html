@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>About Us - Paws Shelter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Shelter</div>
+                <div class="nav-links" id="nav-links">
+                    <!-- Populated by JS -->
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container fade-in">
+        <div class="about-hero">
+            <h1>About Our Shelter</h1>
+            <p>Dedicated to rescuing, rehabilitating, and rehoming animals in need.</p>
+        </div>
+        
+        <div class="about-container">
+            <div id="about-content" class="about-content">
+                <p>Loading shelter information...</p>
+            </div>
+
+            <!-- Founder Section -->
+            <div class="founder-section" style="text-align: center; margin-bottom: 40px; padding: 30px; background: #fdfdfd; border-radius: 15px; border: 1px solid #eee;">
+                <h3 style="color: var(--primary-color); margin-bottom: 20px;">Meet Our Founder</h3>
+                <h4 id="founder-name" style="font-size: 1.4rem; color: var(--text-color);">K.M. Fathum Mubin Sachcha</h4>
+                <p style="color: #666; font-size: 0.9rem;">Founder & CEO</p>
+            </div>
+            
+            <div class="contact-section">
+                <h3>Get in Touch</h3>
+                <div class="contact-grid">
+                    <div class="contact-item">
+                        <div class="contact-icon">📍</div>
+                        <div>
+                            <strong>Location</strong>
+                            <p id="contact-location">Ashulia, Savar, Dhaka</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">📧</div>
+                        <div>
+                            <strong>Email</strong>
+                            <p id="contact-email">petshelter@gmail.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">📞</div>
+                        <div>
+                            <strong>Phone</strong>
+                            <p id="contact-phone">+088 0130 2910017</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('http://localhost/Pet_Shelter/backend/api/settings.php');
+                const data = await response.json();
+                
+                if (data) {
+                    if(data.about_text) {
+                        document.getElementById('about-content').innerHTML = data.about_text.split('\n').map(p => `<p>${p}</p>`).join('');
+                    } else {
+                        document.getElementById('about-content').innerHTML = '<p>Welcome to our shelter. Information coming soon.</p>';
+                    }
+                    
+                    document.getElementById('contact-location').textContent = data.shelter_location || 'Not Set';
+                    document.getElementById('contact-email').textContent = data.contact_email || 'Not Set';
+                    document.getElementById('contact-phone').textContent = data.contact_phone || 'Not Set';
+                    
+                    if(data.founder_name) document.getElementById('founder-name').textContent = data.founder_name;
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                document.getElementById('about-content').textContent = 'Currently unable to load shelter information. Please try again later.';
+            }
+        });
+    </script>
+</body>
+</html>
