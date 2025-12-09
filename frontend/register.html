@@ -54,8 +54,7 @@
             const res = await apiCall('auth.php?action=register', 'POST', { name, email, password });
             
             if (res.success) {
-                alert('Registration successful! Please login.');
-                window.location.href = 'login.html';
+                showWarmModal('Welcome to the Family!', 'Congratulations! You are now part of the Paws Shelter family. 🐾', '🎉');
             } else {
                 errorDiv.innerText = res.error;
             }

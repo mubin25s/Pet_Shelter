@@ -64,9 +64,15 @@
                 description: document.getElementById('desc').value,
                 amount: document.getElementById('amount').value
             };
-            await apiCall('misc.php?type=expense', 'POST', data);
-            loadFinance();
-            e.target.reset();
+            const res = await apiCall('misc.php?type=expense', 'POST', data);
+            
+            if (res.success) {
+                alert(res.message);
+                loadFinance();
+                e.target.reset();
+            } else {
+                alert(res.error);
+            }
         });
         
         loadFinance();

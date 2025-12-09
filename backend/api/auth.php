@@ -1,9 +1,24 @@
 <?php
 session_start();
-error_reporting(0);
-ini_set('display_errors', 0);
-require_once '../config/db.php';
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
+
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
+// Buffer output to catch warnings
+ob_start();
+
+require_once '../config/db.php';
+
+// Clear buffer before sending JSON
+ob_clean();
 
 $action = $_GET['action'] ?? '';
 

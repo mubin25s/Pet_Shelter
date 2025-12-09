@@ -293,6 +293,34 @@ nav { display: flex; justify-content: space-between; align-items: center; }
     background: var(--white);
 }
 
+
+/* Login Tabs */
+.login-tabs {
+    display: flex;
+    background: #f0f0f0;
+    border-radius: 15px;
+    padding: 5px;
+    margin-bottom: 25px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: #888;
+    transition: all 0.3s;
+}
+
+.tab-btn.active {
+    background: var(--white);
+    color: var(--primary-color);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
 .switch-link { text-align: center; margin-top: 20px; font-size: 0.95rem; }
 .switch-link a { color: var(--primary-color); font-weight: 700; }
 

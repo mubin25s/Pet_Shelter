@@ -1,7 +1,19 @@
 <?php
 session_start();
-require_once '../config/db.php';
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
+
+ob_start();
+require_once '../config/db.php';
+ob_clean();
+
+$type = $_GET['type'] ?? '';
 
 $type = $_GET['type'] ?? '';
 
@@ -40,9 +52,24 @@ elseif ($type == 'donation') {
     }
 }
 elseif ($type == 'expense' && $_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') exit;
+    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
+        echo json_encode(["success" => false, "error" => "Unauthorized"]);
+        exit;
+    }
+    
     $data = json_decode(file_get_contents("php://input"), true);
-    $pdo->prepare("INSERT INTO expenses (description, amount) VALUES (?, ?)")->execute([$data['description'], $data['amount']]);
-    echo json_encode(["success" => true]);
+    $amount = $data['amount'];
+    
+    // Calculate current balance
+    $donations = $pdo->query("SELECT SUM(amount) FROM donations")->fetchColumn() ?: 0;
+    $expenses = $pdo->query("SELECT SUM(amount) FROM expenses")->fetchColumn() ?: 0;
+    $balance = $donations - $expenses;
+    
+    if ($balance < $amount) {
+        echo json_encode(["success" => false, "error" => "Insufficient Fund"]);
+    } else {
+        $pdo->prepare("INSERT INTO expenses (description, amount) VALUES (?, ?)")->execute([$data['description'], $amount]);
+        echo json_encode(["success" => true, "message" => "Your expense is successful"]);
+    }
 }
 ?>

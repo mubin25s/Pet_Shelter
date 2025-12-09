@@ -60,6 +60,8 @@
                         <h3>Adoption Application</h3>
                         <form id="applicationForm">
                             <input type="hidden" id="pet_id" value="${pet.id}">
+                            <div class="form-group"><label>Your Name</label><input id="adopter_name" required></div>
+                            <div class="form-group"><label>Your Address</label><input id="adopter_address" required></div>
                             <div class="form-group"><label>Experience</label><input id="exp" required></div>
                             <div class="form-group"><label>Other Pets</label><input id="other" required></div>
                             <div class="form-group"><label>Financial Status</label><select id="fin"><option>Stable</option><option>Unsure</option></select></div>
@@ -74,6 +76,8 @@
                 e.preventDefault();
                 const data = {
                     pet_id: document.getElementById('pet_id').value,
+                    adopter_name: document.getElementById('adopter_name').value,
+                    adopter_address: document.getElementById('adopter_address').value,
                     experience: document.getElementById('exp').value,
                     other_pets: document.getElementById('other').value,
                     financial_status: document.getElementById('fin').value

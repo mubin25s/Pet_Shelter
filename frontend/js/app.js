@@ -1,134 +1,35 @@
-const USE_MOCK = true;
+const USE_MOCK = false; // Set to false to use real backend
 const DB_VERSION = 2; // Increment this to force client-side data refresh
 
 async function apiCall(endpoint, method = 'GET', data = null) {
     if (USE_MOCK) return mockApi(endpoint, method, data);
-    // ...
+    
+    const options = {
+        method: method,
+    };
+
+    if (data) {
+        if (data instanceof FormData) {
+            options.body = data; // Fetch automatically sets Content-Type to multipart/form-data
+        } else {
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = JSON.stringify(data);
+        }
+    }
+
+    // Determine base URL dynamically or use relative path
+    // Assuming frontend/js/app.js calling backend/api/
+    const baseUrl = '../backend/api/'; 
+    
+    try {
+        const response = await fetch(baseUrl + endpoint, options);
+        return await response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        return { success: false, error: 'Network error' };
+    }
 }
-
-async function mockApi(endpoint, method, data) {
-    await new Promise(r => setTimeout(r, 300));
-    
-    // DB Loading with Version Check
-    let db = JSON.parse(localStorage.getItem('pet_db'));
-    let currentVer = localStorage.getItem('db_version');
-
-    if (!db || currentVer != DB_VERSION) {
-        console.log('Refreshing DB from data.json...');
-        const res = await fetch('data.json');
-        db = await res.json();
-        localStorage.setItem('pet_db', JSON.stringify(db));
-        localStorage.setItem('db_version', DB_VERSION);
-    }
-
-    // Auth
-    if (endpoint.includes('auth.php')) {
-        const action = new URLSearchParams(endpoint.split('?')[1]).get('action');
-        if (action === 'login') {
-            const user = db.users.find(u => u.email === data.email && u.password === data.password);
-            if (user) {
-                localStorage.setItem('session', JSON.stringify(user));
-                return { success: true, role: user.role };
-            }
-            return { success: false, error: 'Invalid credentials (Mock: try admin@paws.com / admin)' };
-        }
-        if (action === 'check_session') {
-            const user = JSON.parse(localStorage.getItem('session'));
-            return user ? { loggedIn: true, user } : { loggedIn: false };
-        }
-        if (action === 'logout') {
-            localStorage.removeItem('session');
-            return { success: true };
-        }
-        if (action === 'register') {
-            data.role = 'user';
-            db.users.push(data);
-            localStorage.setItem('pet_db', JSON.stringify(db));
-            return { success: true };
-        }
-    }
-
-    // Pets
-    if (endpoint.includes('pets.php')) {
-        if (method === 'GET') return db.pets;
-        if (method === 'POST') {
-            let img = '../images/dog_1.webp';
-            const file = data.get('image');
-            if(file && file instanceof File) {
-                img = await fileToDataUrl(file);
-            }
-
-            const newPet = {
-                id: Date.now(),
-                name: data.get('name'),
-                type: data.get('type'),
-                image: img,
-                health_status: data.get('health_status') || 'green',
-                status: 'available',
-                description: data.get('description'),
-                history: data.get('history'),
-                vaccine_status: data.get('vaccine_status'),
-                food_habit: data.get('food_habit')
-            };
-            db.pets.unshift(newPet);
-            localStorage.setItem('pet_db', JSON.stringify(db));
-            return { success: true };
-        }
-    }
-    
-    // Misc
-    if (endpoint.includes('misc.php')) {
-        const type = new URLSearchParams(endpoint.split('?')[1]).get('type');
-        
-        if (type === 'rescue' && method === 'POST') {
-            let img = '../images/dog_1.webp';
-            const file = data.get('image');
-            if(file && file instanceof File) {
-                img = await fileToDataUrl(file);
-            }
-
-            const newPet = {
-                id: Date.now(),
-                name: data.get('name') || 'Unknown',
-                type: data.get('type') || 'Rescued',
-                image: img,
-                health_status: 'red',
-                status: 'available',
-                description: 'Rescued from: ' + data.get('location') + '. ' + data.get('description'),
-                history: 'Condition: ' + data.get('condition'),
-                vaccine_status: 'Unknown',
-                food_habit: 'Unknown'
-            };
-            db.pets.unshift(newPet);
-            db.rescues.push({ 
-                location: data.get('location'), 
-                condition_desc: data.get('condition'), 
-                status: 'reported' 
-            });
-            localStorage.setItem('pet_db', JSON.stringify(db));
-            return { success: true };
-        }
-
-        if(type === 'donation') {
-            if(method === 'POST') {
-                // If image is present (e.g. receipt), we just mock save it
-                // Logic: db.donations.history.push({ amount, image: '...' })
-                return { success: true };
-            }
-            return { balance: 500, total_donations: 500, total_expenses: 0, recent_donations: [], recent_expenses: [] };
-        }
-    }
-    
-    // Adoptions
-    if (endpoint.includes('adoptions.php')) {
-        const action = new URLSearchParams(endpoint.split('?')[1]).get('action');
-         if (action === 'list_pending') {
-             return db.adoptions || [];
-         }
-    }
-
-    return { success: true };
-}
+// Mock API removed. Using real backend.
 
 function fileToDataUrl(file) {
     return new Promise((resolve) => {
