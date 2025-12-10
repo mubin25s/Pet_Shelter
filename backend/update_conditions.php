@@ -16,6 +16,7 @@ try {
         
         $needed = 50 - count($petIds);
         
+        for ($i = 0; $i < $needed; $i++) {
             $name = $names[array_rand($names)]; 
             $type = $types[array_rand($types)];
             $insertStmt->execute([$name, $type]);
