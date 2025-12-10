@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Adoptions - Paws Shelter</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/petshelder.css">
 </head>
 <body>
     <header>
@@ -22,7 +22,7 @@
         <h1>Pending Adoptions</h1>
         <div id="requests-list"></div>
     </div>
-    <script src="js/app.js"></script>
+    <script src="js/pet.js"></script>
     <script>
         checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
 

@@ -25,10 +25,7 @@ if ($method == 'GET') {
 elseif ($method == 'POST') {
     // Add a new pet or Update an existing one
     if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-         // Allow regular users to POST new pets? Original code allowed any logged in user to POST.
-         // But for UPDATE, only admin. 
-         // Let's stick to original restriction for add (any user?) -> check logic
-         // Original: if (!isset($_SESSION['user'])) ...
+       
          
          if (!isset($_SESSION['user'])) {
              echo json_encode(["error" => "Unauthorized"]);
@@ -51,10 +48,7 @@ elseif ($method == 'POST') {
         $health = $_POST['health_status'];
         $vaccine = $_POST['vaccine_status'];
         $desc = $_POST['description'];
-        
-        // Optional fields if you have them in DB
-        // $history = $_POST['history'] ?? '';
-        // $food = $_POST['food_habit'] ?? '';
+      ;
 
         // Check if image is being updated
         $imageUpdateSql = "";

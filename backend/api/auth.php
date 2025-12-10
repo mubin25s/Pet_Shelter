@@ -56,7 +56,9 @@ elseif ($action == 'login' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && password_verify($password, $user['password'])) {
+    if (!$user) {
+        echo json_encode(["success" => false, "error" => "User not registered", "code" => "USER_NOT_FOUND"]);
+    } elseif (password_verify($password, $user['password'])) {
         $_SESSION['user'] = [
             'id' => $user['id'],
             'name' => $user['name'],
@@ -64,7 +66,7 @@ elseif ($action == 'login' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         ];
         echo json_encode(["success" => true, "role" => $user['role']]);
     } else {
-        echo json_encode(["success" => false, "error" => "Invalid credentials"]);
+        echo json_encode(["success" => false, "error" => "Write password correctly", "code" => "INVALID_PASSWORD"]);
     }
 }
 elseif ($action == 'check_session') {

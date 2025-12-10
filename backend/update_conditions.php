@@ -16,13 +16,7 @@ try {
         
         $needed = 50 - count($petIds);
         
-        // Ensure we don't run out of names or repeat them too easily if possible, 
-        // but for this simple seed, just picking random ones is better than "Luna 1"
-        for ($i = 0; $i < $needed; $i++) {
-            $name = $names[array_rand($names)]; // Just pick a random name. 
-            // In a real app we'd check for uniqueness against DB, but for this seed script simple random is fine.
-            // Or we could shuffle names array and pop.
-            
+            $name = $names[array_rand($names)]; 
             $type = $types[array_rand($types)];
             $insertStmt->execute([$name, $type]);
         }

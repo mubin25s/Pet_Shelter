@@ -123,7 +123,7 @@
                     <div class="pet-details-info">
                         <p><strong>Type:</strong> ${pet.type}</p>
                         <p><strong>Age:</strong> ${pet.age || 'Unknown'}</p>
-                        <p><strong>Vaccinated:</strong> ${pet.vaccinated ? 'Yes ✅' : 'No ❌'}</p>
+                        <p><strong>Vaccinated:</strong> ${pet.vaccine_status == 1 ? 'Yes ✅' : 'No ❌'}</p>
                         <p><strong>Description:</strong> <br>${pet.description || 'No description provided.'}</p>
                     </div>
 
@@ -202,14 +202,18 @@
                             <div class="form-group" style="flex:1;">
                                 <label style="font-size:0.9rem;">Vaccinated</label>
                                 <select name="vaccine_status" style="padding:8px;">
-                                    <option value="1" ${pet.vaccinated || pet.vaccine_status == 1 ? 'selected' : ''}>Yes ✅</option>
-                                    <option value="0" ${!pet.vaccinated && pet.vaccine_status != 1 ? 'selected' : ''}>No ❌</option>
+                                    <option value="1" ${pet.vaccine_status == 1 ? 'selected' : ''}>Yes ✅</option>
+                                    <option value="0" ${pet.vaccine_status != 1 ? 'selected' : ''}>No ❌</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group" style="margin-bottom:15px;">
                             <label style="font-size:0.9rem;">Description</label>
                             <textarea name="description" style="height:80px; padding:8px; font-size:0.9rem;">${pet.description || ''}</textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="font-size:0.9rem;">Update Photo (Optional)</label>
+                            <input type="file" name="image" accept="image/*" style="font-size:0.9rem;">
                         </div>
                         <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;">
                             Save Changes 💾
@@ -232,10 +236,10 @@
             // Refresh main modal details if still open
             const pet = window.allPets.find(p => p.id == id);
             // Re-fetch to be safe? loadPets does that. 
-            // For now, allow the success modal to trigger loadPets via callback in app.js
+            // For now, allow the success modal to trigger loadPets via callback in pet.js
             // But we also want to refresh the CURRENT viewDetails modal if it is open.
             // Let's rely on the user closing and reopening or simple reload for now, 
-            // actually app.js loadPets() will update the grid, but not the open modal.
+            // actually pet.js loadPets() will update the grid, but not the open modal.
             // Optimistic update:
             const form = e.target;
             pet.name = form.name.value;
