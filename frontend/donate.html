@@ -147,6 +147,32 @@
             openPaymentModal(); // Refresh
         }
 
+        function askToSaveMethod() {
+            // Simple validation before asking
+            let valid = false;
+            if (donationData.payment_method === 'PayPal') {
+                valid = document.querySelector('#paypal-modal input[type="email"]').value !== '';
+            } else if (donationData.payment_method.includes('Pay')) {
+                valid = document.querySelector('#wallet-phone').value !== '';
+            } else {
+                valid = document.querySelector('#card-modal input[maxlength="19"]').value.length > 12;
+            }
+
+            if (!valid) {
+                alert("Please fill in the payment details.");
+                return;
+            }
+
+            // Hide the input modal, show the save question
+            document.querySelectorAll('.payment-modal').forEach(m => m.classList.remove('active'));
+            document.getElementById('save-method-modal').classList.add('active');
+        }
+
+        function confirmSave(save) {
+            document.getElementById('save-method-modal').classList.remove('active');
+            processPayment(save);
+        }
+
         async function processPayment(save = false) {
             // Check inputs if manually entering
             let displayInfo = '';
@@ -220,10 +246,8 @@
                 <label>Password</label>
                 <input type="password" placeholder="••••••••" class="mock-input">
             </div>
-            <div style="margin:15px 0; text-align:left;">
-                <label><input type="checkbox" class="save-check" id="save-paypal"> Save this account for future donations</label>
-            </div>
-            <button onclick="processPayment(document.getElementById('save-paypal').checked)" class="btn btn-primary" style="width:100%; background:#003087;">Opay</button>
+            <br>
+            <button onclick="askToSaveMethod()" class="btn btn-primary" style="width:100%; background:#003087;">Opay</button>
         </div>
     </div>
 
@@ -245,10 +269,8 @@
                     <input type="password" placeholder="123" maxlength="3" class="mock-input">
                 </div>
             </div>
-             <div style="margin:15px 0; text-align:left;">
-                <label><input type="checkbox" class="save-check" id="save-card"> Save this card for future donations</label>
-            </div>
-            <button onclick="processPayment(document.getElementById('save-card').checked)" class="btn btn-primary" style="width:100%;">Pay Now</button>
+            <br>
+            <button onclick="askToSaveMethod()" class="btn btn-primary" style="width:100%;">Pay Now</button>
         </div>
     </div>
 
@@ -257,20 +279,19 @@
         <div class="modal-content" style="max-width:500px; width:90%; text-align:center;">
             <div id="wallet-icon" style="font-size:3rem; margin-bottom:10px;"></div>
             <h3 id="wallet-title">Pay</h3>
-            <p>Confirm payment with your connected wallet.</p>
-            <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">
-                 <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width:40px; height:40px; background:#ddd; border-radius:50%;"></div>
-                    <div style="text-align:left;">
-                        <div style="font-weight:bold; font-size:0.9rem;">**** 1234</div>
-                        <div style="font-size:0.8rem; color:#777;">Default Card</div>
-                    </div>
-                 </div>
+            <p>Enter your linked wallet details to proceed.</p>
+            
+            <div class="form-group" style="text-align:left;">
+                <label>Linked Account Number</label>
+                <input type="text" id="wallet-number" placeholder="xxxx-xxxx-xxxx-xxxx" class="mock-input">
             </div>
-             <div style="margin:15px 0; text-align:left;">
-                <label><input type="checkbox" class="save-check" id="save-wallet"> Save this wallet for future donations</label>
+            <div class="form-group" style="text-align:left;">
+                <label>Phone Number / ID</label>
+                <input type="text" id="wallet-phone" placeholder="+1 234 567 890" class="mock-input">
             </div>
-            <button onclick="processPayment(document.getElementById('save-wallet').checked)" class="btn btn-primary" style="width:100%;">Confirm Payment</button>
+            
+            <br>
+            <button onclick="askToSaveMethod()" class="btn btn-primary" style="width:100%;">Confirm Payment</button>
         </div>
     </div>
     
@@ -278,6 +299,18 @@
     <div id="saved-confirm-modal" class="modal-overlay payment-modal">
         <div class="modal-content" id="saved-confirm-content" style="max-width:400px; text-align:center;">
              <!-- Content Injected via JS -->
+        </div>
+    </div>
+
+    <!-- Save Payment Method Confirmation Modal -->
+    <div id="save-method-modal" class="modal-overlay payment-modal">
+        <div class="modal-content" style="max-width:400px; text-align:center;">
+            <h3>Save Payment Method?</h3>
+            <p>Would you like to save this payment method for faster donations in the future?</p>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                <button onclick="confirmSave(true)" class="btn btn-primary" style="flex:1;">Yes, Save it</button>
+                <button onclick="confirmSave(false)" class="btn btn-secondary" style="background:#ccc; color:#333; flex:1;">No, Thanks</button>
+            </div>
         </div>
     </div>
 
