@@ -1,6 +1,6 @@
 <?php
 session_start();
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+$origin = $_SERVER['HTTP_ORIGIN'] ?? 'http://localhost';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Headers: Content-Type");
@@ -85,11 +85,54 @@ if ($type == 'rescue') {
         echo json_encode($pdo->query("SELECT * FROM rescues WHERE status = 'reported' ORDER BY report_date DESC")->fetchAll(PDO::FETCH_ASSOC));
     }
 }
+elseif ($type == 'payment_methods') {
+    // Lazy Schema: Ensure table exists
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS user_payment_methods (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            type VARCHAR(50),
+            provider VARCHAR(50),
+            display_info VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $e) {}
+
+    if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+        if (!isset($_SESSION['user'])) exit;
+        $methods = $pdo->query("SELECT * FROM user_payment_methods WHERE user_id = " . $_SESSION['user']['id'] . " ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($methods);
+    }
+    elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if (!isset($_SESSION['user'])) exit;
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        $stmt = $pdo->prepare("INSERT INTO user_payment_methods (user_id, type, provider, display_info) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$_SESSION['user']['id'], $data['type'], $data['provider'], $data['display_info']]);
+        
+        echo json_encode(["success" => true, "id" => $pdo->lastInsertId()]);
+    }
+    elseif ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+         if (!isset($_SESSION['user'])) exit;
+         $id = $_GET['id'];
+         $pdo->prepare("DELETE FROM user_payment_methods WHERE id = ? AND user_id = ?")->execute([$id, $_SESSION['user']['id']]);
+         echo json_encode(["success" => true]);
+    }
+}
 elseif ($type == 'donation') {
+    // Lazy Schema Migration: Ensure payment_method column exists
+    try {
+        $check = $pdo->query("SHOW COLUMNS FROM donations LIKE 'payment_method'");
+        if ($check->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE donations ADD COLUMN payment_method VARCHAR(50) DEFAULT 'Manual'");
+        }
+    } catch (Exception $e) { /* Ignore if already exists/error */ }
+
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data = json_decode(file_get_contents("php://input"), true);
-        $stmt = $pdo->prepare("INSERT INTO donations (user_id, amount) VALUES (?, ?)");
-        $stmt->execute([$_SESSION['user']['id'], $data['amount']]);
+        $method = $data['payment_method'] ?? 'Manual';
+        $stmt = $pdo->prepare("INSERT INTO donations (user_id, amount, payment_method) VALUES (?, ?, ?)");
+        $stmt->execute([$_SESSION['user']['id'], $data['amount'], $method]);
         echo json_encode(["success" => true]);
     }
     elseif ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_SESSION['user']) && $_SESSION['user']['role'] == 'admin') {

@@ -61,7 +61,7 @@
             document.getElementById('total-out').innerText = '$' + data.total_expenses;
             
             let html = '<div><h4>Incoming ⬇️</h4>';
-            data.recent_donations.forEach(d => html += `<p style="color:var(--success); margin:5px 0; font-size:0.9rem;">+$${d.amount} - ${d.name}</p>`);
+            data.recent_donations.forEach(d => html += `<p style="color:var(--success); margin:5px 0; font-size:0.9rem;">+$${d.amount} - ${d.name} <span style="font-size:0.8em; opacity:0.8;">(${d.payment_method || 'Manual'})</span></p>`);
             html += '</div><div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;"><h4>Outgoing ⬆️</h4>';
             data.recent_expenses.forEach(e => html += `<p style="color:var(--danger); margin:5px 0; font-size:0.9rem;">-$${e.amount} - ${e.description}</p>`);
             html += '</div>';

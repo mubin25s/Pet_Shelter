@@ -39,62 +39,7 @@
         });
         window.allPets = []; // Store pets globally
 
-        async function loadPets() {
-            const container = document.getElementById('pet-container');
-            const pets = await apiCall('pets.php');
-            window.allPets = pets;
-            
-            if (!pets || pets.length === 0) {
-                container.innerHTML = '<p style="text-align:center; width:100%;">No pets available for adoption right now. Check back later!</p>';
-                return;
-            }
 
-            container.innerHTML = '';
-            pets.forEach(pet => {
-                const card = document.createElement('div');
-                card.className = 'pet-card';
-                // Handle different image paths
-                let imgPath = pet.image;
-                if (imgPath && !imgPath.startsWith('http') && !imgPath.startsWith('../')) {
-                     imgPath = '../backend/' + imgPath;
-                }
-                
-                // Text and Color for status
-                let statusText = 'Healthy';
-                let statusBg = '#28a745'; 
-                let statusColor = 'white';
-
-                if(pet.health_status === 'yellow') {
-                    statusText = 'Needs Help';
-                    statusBg = '#ffc107'; 
-                    statusColor = '#333';
-                }
-                if(pet.health_status === 'red') {
-                    statusText = 'Critical';
-                    statusBg = '#dc3545'; 
-                    statusColor = 'white';
-                }
-
-                card.innerHTML = `
-                    <div style="height:200px; overflow:hidden;">
-                        <img src="${imgPath}" alt="${pet.name}" style="width:100%; height:100%; object-fit:cover;">
-                    </div>
-                    <div class="pet-info" style="padding:15px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            <h3 style="margin:0;">${pet.name}</h3>
-                            <span style="padding:4px 12px; border-radius:20px; background-color:${statusBg}; color:${statusColor}; font-size:0.8rem; font-weight:bold;">
-                                ${statusText}
-                            </span>
-                        </div>
-                        <p class="type" style="color:#666; font-size:0.9rem; margin-bottom:10px;">${pet.type}</p>
-                        
-                        <p style="font-size:0.9rem; color:#555; height:45px; overflow:hidden; margin-bottom:10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${pet.description || 'No description available.'}</p>
-                        <button onclick="viewDetails('${pet.id}')" class="btn btn-primary" style="width:100%;">View Details</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
 
         function viewDetails(id) {
             const pet = window.allPets.find(p => p.id == id);
@@ -402,11 +347,7 @@
             document.getElementById('pet-details-modal').classList.remove('active');
         }
 
-        function getStatusColor(status) {
-            if (status === 'yellow') return { bg: '#ffc107', text: '#333' };
-            if (status === 'red') return { bg: '#dc3545', text: 'white' };
-            return { bg: '#28a745', text: 'white' };
-        }
+
 
         loadPets();
     </script>

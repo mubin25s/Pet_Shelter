@@ -1,6 +1,58 @@
 const USE_MOCK = false; // Set to false when using the real backend
 const DB_VERSION = 2; // Bump this to refresh data on the client side
 
+// DEBUG BANNER
+const banner = document.createElement('div');
+banner.id = 'debug-banner';
+banner.style.position = 'fixed';
+banner.style.top = '0';
+banner.style.left = '0';
+banner.style.width = '100%';
+banner.style.background = '#333';
+banner.style.color = '#fff';
+banner.style.textAlign = 'center';
+banner.style.padding = '10px';
+banner.style.zIndex = '9999';
+banner.style.fontSize = '14px';
+banner.innerText = 'Initializing...';
+document.body.appendChild(banner);
+
+function updateBanner(msg, color) {
+    if (banner) {
+        banner.innerText = msg;
+        banner.style.background = color;
+    }
+}
+
+async function findBackendUrl() {
+    const candidates = [
+        'http://localhost/Pet_Shelter/backend/api/',   // Standard XAMPP
+        'http://localhost:8000/backend/api/',          // PHP Built-in
+        'http://localhost:8080/Pet_Shelter/backend/api/' // Alternative Port
+    ];
+
+    for (const url of candidates) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1000); // 1s timeout
+            
+            const res = await fetch(url + 'test_connection.php', { 
+                method: 'GET',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (res.ok) {
+                console.log("Found Backend at:", url);
+                return url;
+            }
+        } catch (e) { 
+            // Continue to next candidate
+        }
+    }
+    return null;
+}
+
 async function apiCall(endpoint, method = 'GET', data = null) {
     // 1. Check for File Protocol Error
     if (window.location.protocol === 'file:') {
@@ -30,18 +82,22 @@ async function apiCall(endpoint, method = 'GET', data = null) {
             options.body = JSON.stringify(data);
         }
     }
-
-    // 2. Use the Custom PHP Server URL (Port 8000)
-    // We are running a dedicated server for this project to avoid XAMPP path issues
-    const baseUrl = 'http://localhost:8000/backend/api/'; 
     
     try {
+        let baseUrl = await findBackendUrl();
+        
+        if (!baseUrl) {
+             // Fallback to 8000 just to show a meaningful error path if discovery fails
+             baseUrl = 'http://localhost:8000/backend/api/'; 
+        }
+
         const response = await fetch(baseUrl + endpoint, options);
         
-        // 3. Handle HTTP Errors (404, 500)
+        // 3. Handle HTTP Errors (404, 500, 401)
         if (!response.ok) {
-            console.error(`HTTP Error: ${response.status}`);
-            return { success: false, error: `Server Error (${response.status}). Check XAMPP.` };
+            const errText = await response.text();
+            console.error(`HTTP Error: ${response.status} at ${response.url}`, errText);
+            return { success: false, error: `Server Error (${response.status}) at ${response.url}: ${errText || 'Check XAMPP/Console'}` };
         }
 
         // 4. Handle JSON Errors (PHP Warnings mixed with JSON)
@@ -55,7 +111,15 @@ async function apiCall(endpoint, method = 'GET', data = null) {
 
     } catch (error) {
         console.error('API Error:', error);
-        return { success: false, error: 'Network Connection Failed. Is XAMPP running?' };
+        let msg = 'Network Connection Failed.';
+        const fullUrl = baseUrl + endpoint;
+        
+        if (window.location.port === '5500') {
+             msg += ` Is start_backend.bat running? (Trying: ${fullUrl})`;
+        } else {
+             msg += ` Is XAMPP running? Check Console for details. (Target: ${fullUrl})`;
+        }
+        return { success: false, error: msg };
     }
 }
 // Mock API removed. Using real backend.
@@ -108,8 +172,30 @@ function closeWarmModal() {
 }
 
 async function checkSession() {
-    const res = await apiCall('auth.php?action=check_session');
+    // Debug: Test connection first
+    try {
+        const test = await apiCall('test_connection.php');
+        console.log("Backend Connection Test:", test);
+    } catch(e) { console.error("Connection Test Failed", e); }
+
+    let res = { loggedIn: false };
+    try {
+        res = await apiCall('auth.php?action=check_session');
+    } catch (e) {
+        console.error("Session Check Failed:", e);
+    }
+    
+    // Ensure nav is ALWAYs updated, even if backend fails
+    if (!res || typeof res.loggedIn === 'undefined') {
+        res = { loggedIn: false };
+    }
+    
     updateNav(res.loggedIn, res.user);
+    
+    // Remove the initializing banner once done
+    const b = document.getElementById('debug-banner');
+    if(b) b.remove();
+    
     return res;
 }
 
@@ -212,3 +298,61 @@ async function updatePetDetails(id) {
 }
 
 document.addEventListener('DOMContentLoaded', checkSession);
+
+// --- Shared Pet Logic ---
+
+function getStatusColor(status) {
+    if (status === 'yellow') return { bg: '#ffc107', text: '#333' };
+    if (status === 'red') return { bg: '#dc3545', text: 'white' };
+    return { bg: '#28a745', text: 'white' };
+}
+
+async function loadPets() {
+    const container = document.getElementById('pet-container');
+    if (!container) return;
+
+    // container.innerHTML = 'Loading pets...'; // Optional: show loading state
+    const pets = await apiCall('pets.php');
+    window.allPets = pets || [];
+    
+    if (!pets || pets.length === 0) {
+        container.innerHTML = '<p style="text-align:center; width:100%;">No pets available for adoption right now. Check back later!</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    pets.forEach(pet => {
+        const card = document.createElement('div');
+        card.className = 'pet-card';
+        // Handle different image paths
+        let imgPath = pet.image;
+        if (imgPath && !imgPath.startsWith('http') && !imgPath.startsWith('../')) {
+                imgPath = '../backend/' + imgPath;
+        }
+        
+        const colors = getStatusColor(pet.health_status);
+        
+        let statusText = 'Healthy';
+        if(pet.health_status === 'yellow') statusText = 'Needs Help';
+        if(pet.health_status === 'red') statusText = 'Critical';
+
+        card.innerHTML = `
+            <div style="height:200px; overflow:hidden;">
+                <img src="${imgPath}" alt="${pet.name}" style="width:100%; height:100%; object-fit:cover;">
+            </div>
+            <div class="pet-info" style="padding:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <h3 style="margin:0;">${pet.name}</h3>
+                    <span style="padding:4px 12px; border-radius:20px; background-color:${colors.bg}; color:${colors.text}; font-size:0.8rem; font-weight:bold;">
+                        ${statusText}
+                    </span>
+                </div>
+                <p class="type" style="color:#666; font-size:0.9rem; margin-bottom:10px;">${pet.type}</p>
+                
+                <p style="font-size:0.9rem; color:#555; height:45px; overflow:hidden; margin-bottom:10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${pet.description || 'No description available.'}</p>
+                <button onclick="viewDetails('${pet.id}')" class="btn btn-primary" style="width:100%;">View Details</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}

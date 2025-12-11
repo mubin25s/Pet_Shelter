@@ -44,6 +44,9 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS rescues (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
+        name VARCHAR(100) DEFAULT 'Unknown',
+        type VARCHAR(50) DEFAULT 'Unknown',
+        image VARCHAR(255),
         description TEXT NOT NULL,
         location VARCHAR(255) NOT NULL,
         condition_desc TEXT,
@@ -58,6 +61,24 @@ try {
         amount DECIMAL(10, 2) NOT NULL,
         donation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    
+    // Global Settings
+    $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
+        id INT PRIMARY KEY DEFAULT 1,
+        contact_email VARCHAR(255),
+        contact_phone VARCHAR(50),
+        shelter_location TEXT,
+        about_text TEXT,
+        founder_name VARCHAR(255),
+        founder_image VARCHAR(255)
+    )");
+
+    // Insert default settings if not exists
+    $stmt = $pdo->query("SELECT COUNT(*) FROM settings");
+    if ($stmt->fetchColumn() == 0) {
+        $pdo->exec("INSERT INTO settings (id, contact_email, contact_phone, shelter_location, about_text, founder_name, founder_image) 
+                    VALUES (1, 'petshelter@gmail.com', '+088 0123 456789', '123 Animal Street', 'Welcome to our shelter.', 'Founder Name', 'images/founder.png')");
+    }
 
     // Tracking what we spend
     $pdo->exec("CREATE TABLE IF NOT EXISTS expenses (

@@ -11,5 +11,6 @@ try {
     $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
     $pdo->exec("USE `$dbname`");
 } catch (PDOException $e) {
-    die(json_encode(["error" => "Database connection failed"]));
+    http_response_code(500);
+    die(json_encode(["error" => "Database connection failed: " . $e->getMessage()]));
 }

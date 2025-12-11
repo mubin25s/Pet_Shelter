@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Connection Debugger</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .log { background: #f0f0f0; padding: 10px; border: 1px solid #ccc; margin-top: 5px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Connection Debugger 🛠️</h1>
+    <p>This tool checks if the frontend can talk to the backend.</p>
+    
+    <button onclick="runTests()" style="padding: 10px 20px; font-size: 1.2rem;">Run Connectivity Tests</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function runTests() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Running tests...';
+
+            await testEndpoint('test_connection.php', 'Basic Connectivity');
+            await testEndpoint('auth.php?action=check_session', 'Database Connectivity (auth.php)');
+        }
+
+        async function testEndpoint(endpoint, checkName) {
+            const results = document.getElementById('results');
+            
+            // Logic copied from pet.js to mimic real behavior
+            let baseUrl = 'http://localhost:8000/backend/api/'; 
+            if (window.location.port !== '5500') {
+                baseUrl = '../backend/api/';
+            }
+
+            const fullUrl = baseUrl + endpoint;
+            
+            const div = document.createElement('div');
+            div.style.marginTop = '20px';
+            div.innerHTML = `<h3>Testing: ${checkName}</h3>
+                             <div><strong>Target URL:</strong> <a href="${fullUrl}" target="_blank">${fullUrl}</a></div>`;
+
+            try {
+                const response = await fetch(fullUrl);
+                const text = await response.text();
+                
+                if (response.ok) {
+                    div.innerHTML += `<div class="success">✅ HTTP Status: ${response.status} OK</div>`;
+                    try {
+                        const json = JSON.parse(text);
+                        div.innerHTML += `<div class="log">Response JSON:\n${JSON.stringify(json, null, 2)}</div>`;
+                    } catch (e) {
+                         div.innerHTML += `<div class="error">⚠️ Invalid JSON received</div><div class="log">${text}</div>`;
+                    }
+                } else {
+                    div.innerHTML += `<div class="error">❌ HTTP Error: ${response.status}</div><div class="log">${text}</div>`;
+                }
+
+            } catch (error) {
+                div.innerHTML += `<div class="error">❌ Network Error</div>
+                                  <div class="log">${error}</div>
+                                  <p><strong>Possible Causes:</strong><br>
+                                  1. 404 Not Found: The URL is wrong. Check if folders match.<br>
+                                  2. Connection Refused: Server is not running.<br>
+                                  3. CORS Error: Backend is blocking the request.</p>`;
+            }
+            results.appendChild(div);
+        }
+    </script>
+</body>
+</html>
