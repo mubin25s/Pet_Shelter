@@ -25,9 +25,17 @@ ini_set('display_errors', 0);
 
 // Buffer output to catch unnecessary warnings
 ob_start();
-
 require_once '../config/db.php';
-
+// Define logActivity if not included (Auth doesn't include misc.php, so we duplicate or move. 
+// Ideally move to db.php. For now, I will add it here safely check exists)
+if (!function_exists('logActivity')) {
+    function logActivity($pdo, $user_id, $action, $details = '') {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)");
+            $stmt->execute([$user_id, $action, $details]);
+        } catch (Exception $e) {}
+    }
+}
 // Clear the buffer before sending fresh JSON
 ob_clean();
 
@@ -63,8 +71,10 @@ elseif ($action == 'login' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['user'] = [
             'id' => $user['id'],
             'name' => $user['name'],
+            'email' => $user['email'],
             'role' => $user['role']
         ];
+        logActivity($pdo, $user['id'], 'login', 'User logged in');
         echo json_encode(["success" => true, "role" => $user['role']]);
         http_response_code(200);
     } else {
@@ -80,7 +90,10 @@ elseif ($action == 'check_session') {
     }
 }
 elseif ($action == 'logout') {
-    session_destroy();
+    if (isset($_SESSION['user'])) {
+        logActivity($pdo, $_SESSION['user']['id'], 'logout', 'User logged out');
+        session_destroy();
+    }
     echo json_encode(["success" => true]);
 }
 else {

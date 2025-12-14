@@ -24,7 +24,7 @@
     </div>
     <script src="js/pet.js"></script>
     <script>
-        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+        checkSession().then(res => { if (!res.loggedIn || (res.user.role !== 'admin' && res.user.role !== 'volunteer')) window.location.href = 'login.html'; });
 
         async function loadRequests() {
             const list = await apiCall('adoptions.php?action=list_pending');

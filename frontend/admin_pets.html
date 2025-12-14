@@ -90,12 +90,70 @@
         </div>
     </div>
 
+    <!-- Edit Pet Modal -->
+    <div id="edit-pet-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:380px; text-align:left; padding:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 class="modal-title" style="margin:0; font-size:1.3rem;">Edit Pet ✏️</h3>
+                <button onclick="closeEditModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+            </div>
+            
+            <form id="edit-pet-form" onsubmit="submitEditPet(event)">
+                <input type="hidden" name="id" id="edit-id">
+                
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:0.85rem;">Pet Name</label>
+                    <input type="text" name="name" id="edit-name" required style="padding:6px; font-size:0.9rem;">
+                </div>
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:0.85rem;">Type</label>
+                    <input type="text" name="type" id="edit-type" required style="padding:6px; font-size:0.9rem;">
+                </div>
+                 <div style="display:flex; gap:10px;">
+                     <div class="form-group" style="margin-bottom:8px; flex:1;">
+                        <label style="font-size:0.85rem;">Health Status</label>
+                        <select name="health_status" id="edit-health" style="padding:6px; font-size:0.9rem;">
+                            <option value="green">Healthy (Green)</option>
+                            <option value="yellow">Needs Help (Yellow)</option>
+                            <option value="red">Critical (Red)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px; flex:1;">
+                        <label style="font-size:0.85rem;">Vaccinated</label>
+                        <select name="vaccine_status" id="edit-vaccine" style="padding:6px; font-size:0.9rem;">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:0.85rem;">Description</label>
+                    <textarea name="description" id="edit-desc" required style="height:60px; padding:6px; font-size:0.9rem;"></textarea>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label style="font-size:0.85rem;">Change Photo (Optional)</label>
+                    <input type="file" name="image" accept="image/*" style="font-size:0.8rem;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; font-size:0.9rem;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/pet.js"></script>
     <script>
-        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+        let allPets = []; // Store calls
+
+        checkSession().then(res => { 
+            if (!res.loggedIn || (res.user.role !== 'admin' && res.user.role !== 'volunteer')) window.location.href = 'login.html'; 
+            window.currentUserRank = res.user.role; // Store for UI logic
+        });
 
         async function loadPets() {
             const pets = await apiCall('pets.php');
+            allPets = pets || []; // Cache for editing
             const tbody = document.getElementById('pet-table');
             tbody.innerHTML = '';
             
@@ -108,6 +166,14 @@
                      imgPath = '../backend/' + imgPath;
                 }
 
+                let actions = ``;
+                
+                // Edit Button (For Admin AND Volunteer)
+                actions += `<button onclick="openEditModal(${pet.id})" class="btn" style="background:#ff6b6b; color:white; padding:5px 10px; font-size:0.8rem; margin-right:5px;">Edit</button>`;
+
+                // Delete Button (Available to all authorized staff on this page)
+                actions += `<button onclick="deletePet(${pet.id})" class="btn" style="background:#c0392b; color:white; padding:5px 10px; font-size:0.8rem;">Delete</button>`;
+
                 tbody.innerHTML += `
                 <tr>
                     <td>${pet.id}</td>
@@ -116,9 +182,7 @@
                     <td>${pet.type}</td>
                     <td>${pet.status}</td>
                     <td><span class="status-badge status-${pet.health_status}">${pet.health_status}</span></td>
-                    <td>
-                        <button onclick="deletePet(${pet.id})" class="btn" style="background:#dc3545; color:white; padding:5px 10px; font-size:0.8rem;">Delete</button>
-                    </td>
+                    <td>${actions}</td>
                 </tr>`;
             });
         }
@@ -130,13 +194,9 @@
             }, 'Delete', 'Cancel');
         }
 
-        function openAddModal() {
-            document.getElementById('add-pet-modal').classList.add('active');
-        }
-
-        function closeAddModal() {
-            document.getElementById('add-pet-modal').classList.remove('active');
-        }
+        // Add Modal Logic
+        function openAddModal() { document.getElementById('add-pet-modal').classList.add('active'); }
+        function closeAddModal() { document.getElementById('add-pet-modal').classList.remove('active'); }
 
         async function submitNewPet(e) {
             e.preventDefault();
@@ -154,6 +214,41 @@
             }
         }
         
+        // Edit Modal Logic
+        function openEditModal(id) {
+            const pet = allPets.find(p => p.id == id);
+            if (!pet) return;
+            
+            document.getElementById('edit-id').value = pet.id;
+            document.getElementById('edit-name').value = pet.name;
+            document.getElementById('edit-type').value = pet.type;
+            document.getElementById('edit-health').value = pet.health_status;
+            document.getElementById('edit-vaccine').value = pet.vaccine_status;
+            document.getElementById('edit-desc').value = pet.description;
+            
+            document.getElementById('edit-pet-modal').classList.add('active');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('edit-pet-modal').classList.remove('active');
+        }
+
+        async function submitEditPet(e) {
+            e.preventDefault();
+            const form = document.getElementById('edit-pet-form');
+            const formData = new FormData(form);
+
+            // Use update query param for backend switch
+            const res = await apiCall('pets.php?action=update', 'POST', formData);
+            if (res.success) {
+                closeEditModal();
+                showWarmModal('Success', 'Pet details updated! 📝', '✅');
+                loadPets();
+            } else {
+                showWarmModal('Error', 'Update failed: ' + res.error, '❌');
+            }
+        }
+
         loadPets();
     </script>
 </body>

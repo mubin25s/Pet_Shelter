@@ -48,6 +48,13 @@
                 <h3>Recent Activity</h3>
                 <div id="activity-list" style="display:flex; flex-direction:column; gap:10px;"></div>
             </div>
+
+             <div class="card">
+                <h3>⏳ Pending Expense Requests</h3>
+                <div id="pending-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:10px;">
+                    <p>Loading...</p>
+                </div>
+            </div>
         </div>
     </div>
     <script src="js/pet.js"></script>
@@ -63,10 +70,51 @@
             let html = '<div><h4>Incoming ⬇️</h4>';
             data.recent_donations.forEach(d => html += `<p style="color:var(--success); margin:5px 0; font-size:0.9rem;">+$${d.amount} - ${d.name} <span style="font-size:0.8em; opacity:0.8;">(${d.payment_method || 'Manual'})</span></p>`);
             html += '</div><div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;"><h4>Outgoing ⬆️</h4>';
-            data.recent_expenses.forEach(e => html += `<p style="color:var(--danger); margin:5px 0; font-size:0.9rem;">-$${e.amount} - ${e.description}</p>`);
+            data.recent_expenses.forEach(e => {
+                let by = e.user_name ? `(${e.user_name})` : '';
+                html += `<p style="color:var(--danger); margin:5px 0; font-size:0.9rem;">-$${e.amount} - ${e.description} <span style="font-size:0.8em; opacity:0.8;">${by}</span></p>`;
+            });
             html += '</div>';
             
             document.getElementById('activity-list').innerHTML = html;
+
+            
+            // Load Pending
+            loadPendingRequests();
+        }
+        
+        async function loadPendingRequests() {
+            const list = document.getElementById('pending-list');
+            const reqs = await apiCall('misc.php?type=expense_requests');
+            
+            if (!reqs || reqs.length === 0) {
+                list.innerHTML = '<p style="color:#777;">No pending requests.</p>';
+                return;
+            }
+            
+            let html = '';
+            reqs.forEach(r => {
+                html += `
+                <div style="background:#fffcf5; border:1px solid #ffeba7; padding:15px; border-radius:8px;">
+                     <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">$${r.amount}</div>
+                     <p style="margin:5px 0 10px;">"${r.description}" <br><small>by ${r.requester_name}</small></p>
+                     <div style="display:flex; gap:10px;">
+                        <button onclick="handleExpense(${r.id}, 'approve')" class="btn btn-primary" style="padding:5px 10px; font-size:0.9rem;">Approve</button>
+                        <button onclick="handleExpense(${r.id}, 'reject')" class="btn btn-secondary" style="padding:5px 10px; font-size:0.9rem; background:#dc3545; color:white; border:none;">Reject</button>
+                     </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        async function handleExpense(id, action) {
+             const res = await apiCall('misc.php?type=expense_action', 'POST', { id, action });
+             if (res.success) {
+                 showWarmModal('Success', res.message, action === 'approve' ? '✅' : '🗑️');
+                 loadFinance(); // Reloads all
+             } else {
+                 showWarmModal('Error', res.error, '❌');
+             }
         }
 
         // Add Expense

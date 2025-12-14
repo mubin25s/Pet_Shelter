@@ -31,27 +31,105 @@
             <div class="switch-link"><a href="index.html">Back to Home</a></div>
         </div>
     </div>
+    <!-- Security Code Modal -->
+    <div id="security-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:300px;">
+            <h3>🔐 Admin Access</h3>
+            <p>Enter Security Code</p>
+            <input type="password" id="sec-code" style="width:100%; padding:10px; margin:10px 0; text-align:center; letter-spacing:5px;" maxlength="5">
+            <button onclick="verifyCode()" class="btn btn-primary" style="width:100%">Verify</button>
+            <button onclick="closeSecurityModal()" class="btn btn-secondary" style="width:100%; margin-top:5px;">Cancel</button>
+        </div>
+    </div>
+
     <script src="js/pet.js"></script>
     <script>
         let currentRole = 'user';
+        let adminUnlocked = false;
 
         function switchTab(role) {
+            if (role === 'admin' && !adminUnlocked) {
+                // Prompt Security Code first
+                document.getElementById('security-modal').classList.add('active');
+                document.getElementById('sec-code').value = '';
+                document.getElementById('sec-code').focus();
+                return;
+            }
+
+            // Normal Switching Logic or Post-Unlock Logic
+            updateUI(role);
+        }
+
+        function verifyCode() {
+            const code = document.getElementById('sec-code').value;
+            if (code === '10017') {
+                adminUnlocked = true;
+                closeSecurityModal();
+                updateUI('admin'); // Show Admin Interface
+                
+                // Change Tabs to Admin/Volunteer sub-selection
+                const tabs = document.querySelector('.login-tabs');
+                tabs.innerHTML = `
+                    <button class="tab-btn active" onclick="setSubRole('admin')" style="background:#dc3545; color:black;">Admin Login</button>
+                    <button class="tab-btn" onclick="setSubRole('volunteer')" style="background:#ffc107; color:black;">Volunteer Login</button>
+                `;
+            } else {
+                showWarmModal('Access Denied', 'Incorrect Security Code.', '⛔');
+            }
+        }
+
+        function closeSecurityModal() {
+            document.getElementById('security-modal').classList.remove('active');
+        }
+
+        function setSubRole(role) {
+            currentRole = role;
+            const title = document.getElementById('login-title');
+            const btns = document.querySelectorAll('.tab-btn');
+            
+            // Remove active from all
+            btns.forEach(b => b.classList.remove('active'));
+            
+            if (role === 'admin') {
+                btns[0].classList.add('active');
+                title.innerHTML = 'Admin Portal 🔒<br><small style="font-size:0.9rem; color:#666;">Administrator Access</small>';
+            } else {
+                btns[1].classList.add('active');
+                title.innerHTML = 'Volunteer Portal 🤝<br><small style="font-size:0.9rem; color:#666;">Team Member Access</small>';
+            }
+        }
+        
+        function resetLogin() {
+            adminUnlocked = false;
+            currentRole = 'user';
+            window.location.reload(); // Simple reset
+        }
+
+        function updateUI(role) {
             currentRole = role;
             const buttons = document.querySelectorAll('.tab-btn');
             const title = document.getElementById('login-title');
             const regLink = document.getElementById('register-link');
-            const form = document.getElementById('loginForm');
             
-            document.getElementById('error-msg').innerText = ''; // Clear errors
+            document.getElementById('error-msg').innerText = ''; 
             
-            if (role === 'admin') {
-                buttons[0].classList.remove('active');
-                buttons[1].classList.add('active');
-                title.innerText = 'Admin Portal 🔒';
+            if (role === 'admin' || role === 'volunteer') {
+                // Initial Admin State before sub-tabs (handled in verifyCode for dynamic switch)
+                 // If we are here via updateUI('admin') call in verifyCode, we handle basic setup
+                title.innerHTML = 'Admin Portal 🔒';
                 regLink.style.display = 'none';
+                
+                // Toggle main tabs visuals if existence (only before sub-rendering)
+                if(buttons.length === 2) {
+                     buttons[0].classList.remove('active');
+                     buttons[1].classList.add('active');
+                }
             } else {
-                buttons[0].classList.add('active');
-                buttons[1].classList.remove('active');
+                // User Mode
+                if(buttons.length === 2) {
+                    buttons[0].classList.add('active');
+                    buttons[1].classList.remove('active');
+                }
                 title.innerText = 'Welcome Back! 🐾';
                 regLink.style.display = 'block';
             }
@@ -66,35 +144,56 @@
             const res = await apiCall('auth.php?action=login', 'POST', { email, password });
             
             if (res.success) {
-                const targetDash = (currentRole === 'admin' && res.role === 'admin') ? 'admin_dashboard.html' : 'user_dashboard.html';
+                // Routing logic
+                let target = 'user_dashboard.html';
                 
-                if (currentRole === 'admin' && res.role !== 'admin') {
-                     errorDiv.innerHTML = 'Access Denied: You are not an administrator.';
-                     apiCall('auth.php?action=logout');
-                } else {
-                    window.location.href = targetDash;
+                if (res.role === 'admin') target = 'admin_dashboard.html';
+                else if (res.role === 'volunteer') target = 'volunteer_dashboard.html';
+                
+                // Enforce Context Logic (User requested separation)
+                // Enforce Strict Role Separation
+                // 1. User Tab: Only 'user' allowed
+                if (currentRole === 'user' && res.role !== 'user') {
+                    errorDiv.innerHTML = `<strong>Access Denied</strong><br>Admins and Volunteers must use <a href="#" onclick="switchTab('admin')">Admin Access</a>.`;
+                    await apiCall('auth.php?action=logout'); // Invalidate session
+                    return;
                 }
-            } else {
-                // Default error message
-                errorDiv.innerText = res.error; 
+
+                // 2. Admin Tab: Only 'admin' allowed
+                if (currentRole === 'admin' && res.role !== 'admin') {
+                    errorDiv.innerHTML = `<strong>Access Denied</strong><br>This portal is for Administrators only.`;
+                    await apiCall('auth.php?action=logout');
+                    return;
+                }
+
+                // 3. Volunteer Tab: Only 'volunteer' allowed
+                if (currentRole === 'volunteer' && res.role !== 'volunteer') {
+                    errorDiv.innerHTML = `<strong>Access Denied</strong><br>This portal is for Volunteers only.`;
+                    await apiCall('auth.php?action=logout');
+                    return;
+                }
                 
+                // If passed checks, redirect
+                window.location.href = target;
+            } else {
+                errorDiv.innerText = res.error; 
                 if (res.code === 'USER_NOT_FOUND') {
-                    // Show "User not registered" message and a Register button
-                    errorDiv.innerHTML = `<span style="display:block; margin-bottom:5px;">${res.error}</span> 
-                                          <a href="register.html" class="btn btn-primary" style="font-size:0.8rem; padding: 5px 15px;">Register Now</a>`;
-                } else if (res.code === 'INVALID_PASSWORD') {
-                    // Show specific message for wrong password
-                     errorDiv.innerHTML = `<span style="font-weight:bold; display:block; margin-bottom:5px;">${res.error}</span>
-                     <button type="button" class="btn btn-secondary" onclick="resetPassword()" style="font-size:0.8rem; padding: 5px 15px; background-color: #ff6b6b; color: white; border: none; cursor: pointer;">Try Again</button>`;
+                    if (currentRole === 'user') {
+                        errorDiv.innerHTML = `<span style="display:block; margin-bottom:5px;">${res.error}</span> 
+                                              <a href="register.html" class="btn btn-primary" style="font-size:0.8rem; padding: 5px 15px;">Register Now</a>`;
+                    } else {
+                         // Volunteers and Admins cannot self-register
+                         errorDiv.innerHTML = `<span style="display:block; margin-bottom:5px;">${res.error}</span> 
+                                               <small>Please contact the Administrator.</small>`;
+                    }
                 }
             }
         });
-
-        function resetPassword() {
-            document.getElementById('password').value = '';
-            document.getElementById('password').focus();
-            document.getElementById('error-msg').innerText = '';
-        }
+        
+        // Enter key for security modal
+        document.getElementById('sec-code').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') verifyCode();
+        });
     </script>
 </body>
 </html>

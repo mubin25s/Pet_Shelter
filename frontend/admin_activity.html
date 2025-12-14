@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Activity Logs - Paws Shelter</title>
+    <link rel="stylesheet" href="css/petshelder.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Admin</div>
+                <div class="nav-links">
+                    <a href="admin_dashboard.html">Dashboard</a>
+                    <a href="admin_volunteers.html">Volunteers</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Activity Logs</h1>
+        <p>Tracking all volunteer and admin actions.</p>
+        
+        <div class="card">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#f0f0f0; text-align:left;">
+                        <th style="padding:10px;">Time</th>
+                        <th style="padding:10px;">User</th>
+                        <th style="padding:10px;">Action</th>
+                        <th style="padding:10px;">Details</th>
+                    </tr>
+                </thead>
+                <tbody id="log-list">
+                    <tr><td colspan="4" style="padding:20px; text-align:center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/pet.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+        
+        loadLogs();
+
+        async function loadLogs() {
+            const list = document.getElementById('log-list');
+            const data = await apiCall('misc.php?type=activity_logs');
+            
+            if (!data || data.length === 0) {
+                list.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center;">No activity recorded yet.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            data.forEach(log => {
+                const roleBadge = log.user_role === 'admin' ? '👑' : (log.user_role === 'volunteer' ? '🤝' : '👤');
+                html += `
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:10px; color:#666; font-size:0.9rem;">${new Date(log.created_at).toLocaleString()}</td>
+                    <td style="padding:10px;">${roleBadge} ${log.user_name || 'Unknown'}</td>
+                    <td style="padding:10px; font-weight:bold; color:var(--primary-color);">${log.action}</td>
+                    <td style="padding:10px; color:#444;">${log.details}</td>
+                </tr>`;
+            });
+            list.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

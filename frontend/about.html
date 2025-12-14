@@ -34,6 +34,14 @@
                 <h4 id="founder-name" style="font-size: 1.4rem; color: var(--text-color);">K.M. Fathum Mubin Sachcha</h4>
                 <p style="color: #666; font-size: 0.9rem;">Founder & CEO</p>
             </div>
+
+            <!-- Volunteers Section -->
+            <div class="volunteers-section" style="text-align: center; margin-bottom: 40px;">
+                <h3 style="color: var(--primary-color); margin-bottom: 20px;">Meet Our Volunteers</h3>
+                <div id="volunteer-list" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
+                    <p>Loading volunteers...</p>
+                </div>
+            </div>
             
             <div class="contact-section">
                 <h3>Get in Touch</h3>
@@ -68,25 +76,40 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const response = await fetch('http://localhost/Pet_Shelter/backend/api/settings.php');
-                const data = await response.json();
+                // Load Settings
+                const data = await apiCall('settings.php');
                 
-                if (data) {
+                if (data && data.success !== false) {
                     if(data.about_text) {
                         document.getElementById('about-content').innerHTML = data.about_text.split('\n').map(p => `<p>${p}</p>`).join('');
                     } else {
                         document.getElementById('about-content').innerHTML = '<p>Welcome to our shelter. Information coming soon.</p>';
                     }
                     
-                    document.getElementById('contact-location').textContent = data.shelter_location || 'Not Set';
-                    document.getElementById('contact-email').textContent = data.contact_email || 'Not Set';
-                    document.getElementById('contact-phone').textContent = data.contact_phone || 'Not Set';
-                    
+                    if(data.shelter_location) document.getElementById('contact-location').textContent = data.shelter_location;
+                    if(data.contact_email) document.getElementById('contact-email').textContent = data.contact_email;
+                    if(data.contact_phone) document.getElementById('contact-phone').textContent = data.contact_phone;
                     if(data.founder_name) document.getElementById('founder-name').textContent = data.founder_name;
                 }
+
+                // Load Volunteers
+                const volunteers = await apiCall('misc.php?type=public_volunteers');
+                const volList = document.getElementById('volunteer-list');
+                
+                if (volunteers && Array.isArray(volunteers) && volunteers.length > 0) {
+                    volList.innerHTML = volunteers.map(v => `
+                        <div style="background: #fff; padding: 15px 25px; border-radius: 50px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05); min-width: 150px;">
+                            <span style="font-weight: bold; color: #555;">${v.name}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    volList.innerHTML = '<p style="color:#777;">Only our Founder is currently listed.</p>';
+                }
+
             } catch (error) {
-                console.error('Error loading settings:', error);
-                document.getElementById('about-content').textContent = 'Currently unable to load shelter information. Please try again later.';
+                console.error('Error loading data:', error);
+                document.getElementById('about-content').innerText = 'Welcome to Paws Shelter.';
+                document.getElementById('volunteer-list').innerText = 'No volunteers found.';
             }
         });
     </script>

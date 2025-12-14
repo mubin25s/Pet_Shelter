@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Volunteer Dashboard - Paws Shelter</title>
+    <link rel="stylesheet" href="css/petshelder.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Volunteer Panel</div>
+                <div class="nav-links">
+                    <a href="index.html">View Site</a>
+                    <a href="admin_pets.html">Manage Pets</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Volunteer Dashboard</h1>
+        
+        <div class="dashboard-grid">
+            <!-- Expense Request Form -->
+            <div class="card">
+                <h3>💸 Request Funds</h3>
+                <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">Need supplies or vet visits? Request funds here.</p>
+                <form id="requestForm">
+                    <div class="form-group">
+                        <label>Reason / Description</label>
+                        <input id="desc" required placeholder="e.g. Vet Visit for Max">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount ($)</label>
+                        <input id="amount" type="number" step="0.01" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">Submit Request</button>
+                </form>
+            </div>
+
+            <!-- My Requests Status -->
+            <div class="card">
+                <h3>📋 My Pending Requests</h3>
+                <div id="request-list" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
+                    <p>Loading...</p>
+                </div>
+            </div>
+            
+             <!-- Quick Actions -->
+            <div class="card">
+                <h3>⚡ Quick Actions</h3>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <a href="admin_pets.html" class="btn btn-primary">🐶 Manage Pets</a>
+                    <a href="admin_rescues.html" class="btn btn-primary">🚑 Manage Rescues</a>
+                    <a href="admin_adoptions.html" class="btn btn-primary">📝 Review Adoptions</a>
+                    <a href="donate.html" class="btn btn-secondary" style="text-align:center;">💖 Donate Own Money</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/pet.js"></script>
+    <script>
+        checkSession().then(res => { 
+            if (!res.loggedIn || res.user.role !== 'volunteer') window.location.href = 'login.html'; 
+            loadMyRequests();
+        });
+
+        document.getElementById('requestForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const data = {
+                description: document.getElementById('desc').value,
+                amount: document.getElementById('amount').value
+            };
+            
+            // Using same expense endpoint but logic in backend handles 'pending' for volunteers
+            const res = await apiCall('misc.php?type=expense', 'POST', data);
+            
+            if (res.success) {
+                showWarmModal('Request Submitted', 'Your expense request has been sent for approval.', '📝');
+                document.getElementById('requestForm').reset();
+                loadMyRequests();
+            } else {
+                showWarmModal('Error', res.error, '❌');
+            }
+        });
+
+        async function loadMyRequests() {
+            const list = document.getElementById('request-list');
+            const reqs = await apiCall('misc.php?type=expense_requests');
+            
+            if (!reqs || reqs.length === 0) {
+                list.innerHTML = '<p style="color:#777;">No pending requests.</p>';
+                return;
+            }
+            
+            let html = '';
+            reqs.forEach(r => {
+                html += `
+                <div style="padding:10px; border:1px solid #eee; border-radius:5px; background:#f9f9f9;">
+                    <div style="font-weight:bold;">$${r.amount}</div>
+                    <div style="font-size:0.9rem; color:#555;">${r.description}</div>
+                    <div style="font-size:0.8rem; color:#ffc107; margin-top:5px;">⏳ Pending Approval</div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

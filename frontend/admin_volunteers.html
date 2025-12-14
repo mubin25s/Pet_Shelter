@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Volunteers - Paws Shelter</title>
+    <link rel="stylesheet" href="css/petshelder.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">🐾 Paws Admin</div>
+                <div class="nav-links">
+                    <a href="admin_dashboard.html">Dashboard</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Manage Volunteers</h1>
+        
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1.5fr;">
+            <!-- Add Volunteer Form -->
+            <div class="card">
+                <h3>➕ Add New Volunteer</h3>
+                <form id="addVolForm">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input id="email" type="email" required>
+                    </div>
+                    <div class="form-group" style="display:flex; gap:10px;">
+                        <div style="flex:1;">
+                            <label>Age</label>
+                            <input id="age" type="number" required>
+                        </div>
+                        <div style="flex:1;">
+                            <label>Gender</label>
+                            <select id="gender" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; margin-top:5px;">
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input id="password" type="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">Create Volunteer</button>
+                </form>
+            </div>
+
+            <!-- List Volunteers -->
+            <div class="card">
+                <h3>👥 Current Volunteers</h3>
+                <div id="vol-list" style="margin-top:15px;">
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/pet.js"></script>
+    <script>
+        checkSession().then(res => { if (!res.loggedIn || res.user.role !== 'admin') window.location.href = 'login.html'; });
+        
+        loadVolunteers();
+
+        document.getElementById('addVolForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                age: document.getElementById('age').value,
+                gender: document.getElementById('gender').value,
+                password: document.getElementById('password').value
+            };
+            
+            const res = await apiCall('misc.php?type=create_volunteer', 'POST', data);
+            
+            if (res.success) {
+                showWarmModal('Success', 'Volunteer added successfully!', '✅');
+                document.getElementById('addVolForm').reset();
+                loadVolunteers();
+            } else {
+                showWarmModal('Error', res.error, '❌');
+            }
+        });
+
+        async function loadVolunteers() {
+            const list = document.getElementById('vol-list');
+            const data = await apiCall('misc.php?type=create_volunteer');
+            
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p>No volunteers found.</p>';
+                return;
+            }
+
+            let html = '<table style="width:100%; border-collapse:collapse;">';
+            html += '<tr style="background:#f0f0f0; text-align:left;"><th>Name</th><th>Email</th><th>Age/Gender</th><th>Action</th></tr>';
+            
+            data.forEach(u => {
+                html += `
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px;">${u.name}</td>
+                    <td style="padding:8px;">${u.email}</td>
+                    <td style="padding:8px;">${u.age} / ${u.gender}</td>
+                    <td style="padding:8px;">
+                        <button onclick="promptRemove(${u.id}, '${u.name}')" class="btn" style="background:#dc3545; color:white; padding:5px 10px; font-size:0.8rem;">Remove</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</table>';
+            list.innerHTML = html;
+        }
+    </script>
+
+    <!-- Remove with Reason Modal -->
+    <div id="remove-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Remove Volunteer</h3>
+            <p>Please provide a reason for removing <b id="rem-vol-name"></b>.</p>
+            <textarea id="rem-reason" placeholder="Reason..." style="width:100%; height:80px; margin:10px 0; padding:8px;"></textarea>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeRemoveModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmRemove()" class="btn btn-primary" style="background:#dc3545">Remove</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let volToRemove = null;
+
+        function promptRemove(id, name) {
+            volToRemove = id;
+            document.getElementById('rem-vol-name').innerText = name;
+            document.getElementById('rem-reason').value = '';
+            document.getElementById('remove-modal').classList.add('active');
+        }
+        
+        function closeRemoveModal() {
+            document.getElementById('remove-modal').classList.remove('active');
+            volToRemove = null;
+        }
+        
+        async function confirmRemove() {
+            const reason = document.getElementById('rem-reason').value;
+            if (!reason) {
+                showWarmModal('Required', 'Please enter a reason.', '⚠️');
+                return;
+            }
+            
+            const res = await apiCall('misc.php?type=remove_volunteer', 'POST', { id: volToRemove, reason });
+            if (res.success) {
+                closeRemoveModal();
+                showWarmModal('Removed', 'Volunteer has been removed.', '🗑️');
+                loadVolunteers();
+            } else {
+                showWarmModal('Error', res.error, '❌');
+            }
+        }
+    </script>
+</body>
+</html>

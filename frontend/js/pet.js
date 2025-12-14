@@ -26,9 +26,10 @@ function updateBanner(msg, color) {
 
 async function findBackendUrl() {
     const candidates = [
-        'http://localhost/Pet_Shelter/backend/api/',   // Standard XAMPP
-        'http://localhost:8000/backend/api/',          // PHP Built-in
-        'http://localhost:8080/Pet_Shelter/backend/api/' // Alternative Port
+        'http://localhost:8000/backend/api/',        // Priority: Match Standard Browser URL
+        'http://127.0.0.1:8000/backend/api/',  // Fallback
+        'http://localhost/Pet_Shelter/backend/api/', // XAMPP
+        'http://localhost:8080/Pet_Shelter/backend/api/'
     ];
 
     for (const url of candidates) {
@@ -83,8 +84,10 @@ async function apiCall(endpoint, method = 'GET', data = null) {
         }
     }
     
+    let baseUrl = '';
+    
     try {
-        let baseUrl = await findBackendUrl();
+        baseUrl = await findBackendUrl();
         
         if (!baseUrl) {
              // Fallback to 8000 just to show a meaningful error path if discovery fails
@@ -224,6 +227,8 @@ function updateNav(loggedIn, user) {
     if (loggedIn) {
         if (user.role === 'admin') {
             html += `<a href="admin_dashboard.html" class="btn btn-primary">Admin Panel</a>`;
+        } else if (user.role === 'volunteer') {
+            html += `<a href="volunteer_dashboard.html" class="btn btn-primary">Volunteer Panel</a>`;
         } else {
             html += `<a href="user_dashboard.html" class="btn btn-primary">Dashboard</a>`;
         }
@@ -356,3 +361,289 @@ async function loadPets() {
         container.appendChild(card);
     });
 }
+
+// --- Chat System ---
+
+let chatPollInterval = null;
+let currentChatUser = null;
+
+function initChat() {
+    // Hide on login/register pages
+    if (window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html')) {
+        return;
+    }
+
+    // Only show if logged in
+    checkSession().then(res => {
+        if (res.loggedIn) {
+            createChatWidget();
+        }
+    });
+}
+
+function createChatWidget() {
+    if (document.getElementById('chat-widget-btn')) return;
+
+    // Button
+    const btn = document.createElement('button');
+    btn.id = 'chat-widget-btn';
+    btn.className = 'chat-widget-btn';
+    btn.innerHTML = `<img src="images/chat_icon_orange.png" alt="Chat" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+    btn.onclick = toggleChat;
+    document.body.appendChild(btn);
+
+    // Box
+    const box = document.createElement('div');
+    box.id = 'chat-box';
+    box.className = 'chat-box';
+    box.innerHTML = `
+        <div class="chat-header">
+            <h3 id="chat-title">Messages</h3>
+            <button class="chat-close" onclick="toggleChat()">×</button>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <!-- Content goes here -->
+        </div>
+        <div class="chat-footer" id="chat-footer" style="display:none;">
+            <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleChatEnter(event)">
+            <button onclick="sendChatMessage()">➤</button>
+        </div>
+    `;
+    document.body.appendChild(box);
+}
+
+async function toggleChat() {
+    const box = document.getElementById('chat-box');
+    box.classList.toggle('active');
+    
+    if (box.classList.contains('active')) {
+        // Opened
+        if (!currentChatUser) {
+            await loadChatTargets();
+        } else {
+            scrollToBottom();
+            startPolling();
+        }
+    } else {
+        // Closed
+        stopPolling();
+    }
+}
+
+async function loadChatTargets() {
+    const body = document.getElementById('chat-body');
+    const footer = document.getElementById('chat-footer');
+    const title = document.getElementById('chat-title');
+    
+    title.innerText = 'Messages';
+    footer.style.display = 'none';
+    body.innerHTML = '<p style="text-align:center; margin-top:20px; color:#888;">Connecting...</p>';
+    currentChatUser = null;
+    stopPolling();
+
+    try {
+        const res = await apiCall('messages.php?action=get_targets');
+        
+        if (res.success && res.data.length > 0) {
+            body.innerHTML = '<div class="user-list"></div>';
+            const list = body.querySelector('.user-list');
+            
+            res.data.forEach(user => {
+                const item = document.createElement('div');
+                item.className = 'user-item';
+                item.onclick = () => openConversation(user.id, user.name);
+                item.innerHTML = `
+                    <div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>
+                    <div class="user-info">
+                        <h4>${user.name}</h4>
+                        <span>${user.role}</span>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        } else {
+            console.error("Chat Load Error:", res);
+            let errorMsg = res.error || "Unknown Error";
+            if (!res.success && res.data && res.data.length === 0) errorMsg = "No contacts found.";
+
+            // Extended Diagnostics
+            body.innerHTML = `<div style="text-align:center; padding:20px; color:red;">
+                <p><strong>Connection Failed</strong></p>
+                <small>${errorMsg}</small>
+                <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
+                <div style="text-align:left; font-size:11px; color:#555; background:#f9f9f9; padding:5px; border-radius:4px;">
+                    <strong>Diagnostics:</strong><br>
+                    URL: ${baseUrl || 'Not Found'}<br>
+                    Time: ${new Date().toLocaleTimeString()}
+                </div>
+                <br>
+                <button class="btn btn-primary" onclick="loadChatTargets()">Retry</button>
+            </div>`;
+        }
+    } catch (e) {
+        console.error("Chat System Error:", e);
+        body.innerHTML = `<div style="text-align:center; padding:20px; color:red;">
+            <p><strong>System Error</strong></p>
+            <small>${e.message}</small>
+            <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
+             <div style="text-align:left; font-size:11px; color:#555; background:#f9f9f9; padding:5px; border-radius:4px;">
+                <strong>Diagnostics:</strong><br>
+                URL: ${baseUrl || 'Not Found'}<br>
+                Protocol: ${window.location.protocol}
+            </div>
+            <br>
+            <button class="btn btn-primary" onclick="loadChatTargets()">Retry</button>
+        </div>`;
+    }
+}
+
+async function openConversation(userId, userName) {
+    currentChatUser = userId;
+    const body = document.getElementById('chat-body');
+    const footer = document.getElementById('chat-footer');
+    const title = document.getElementById('chat-title');
+
+    title.innerText = userName;
+    // Add back button logic if needed, or just relying on "Messages" title click? 
+    // Let's add a small back arrow to title if deep in convo? 
+    // For simplicity, click '×' to close, or reopen to see list? 
+    // A back button is better UX.
+    title.innerHTML = `<span onclick="loadChatTargets()" style="cursor:pointer; margin-right:10px;">❮</span> ${userName}`;
+    
+    footer.style.display = 'flex';
+    body.innerHTML = '<div class="conversation-view" id="chat-messages">Loading...</div>';
+    
+    await loadMessages();
+    startPolling();
+}
+
+async function loadMessages() {
+    if (!currentChatUser) return;
+    
+    const res = await apiCall(`messages.php?action=get_conversation&user_id=${currentChatUser}`);
+    const container = document.getElementById('chat-messages');
+    if (!container) return; // Closed?
+
+    if (res.success) {
+        const myId = (await checkSession()).user.id; // Cache this?
+        
+        container.innerHTML = '';
+        if (res.data.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#ccc; margin-top:20px;">No messages yet. Say hi!</p>';
+            return;
+        }
+
+        res.data.forEach(msg => {
+            const div = document.createElement('div');
+            const isMe = msg.sender_id == myId;
+            div.className = `message-bubble ${isMe ? 'message-sent' : 'message-received'}`;
+            div.innerText = msg.message;
+            div.title = msg.created_at;
+            container.appendChild(div);
+        });
+        scrollToBottom();
+    }
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || !currentChatUser) return;
+
+    input.value = ''; // Optimistic clear
+    
+    // Append temporarily? Or just wait for poll? 
+    // Better to append strictly for UX, but polling handles it too. 
+    // Let's just wait for reload for simplicity or manual append.
+    
+    const res = await apiCall('messages.php?action=send', 'POST', {
+        receiver_id: currentChatUser,
+        message: text
+    });
+
+    if (res.success) {
+        await loadMessages();
+    } else {
+        alert('Failed to send message: ' + (res.error || 'Unknown network error. Check console.'));
+        console.error("Send Message Failed:", res);
+    }
+}
+
+function handleChatEnter(e) {
+    if (e.key === 'Enter') sendChatMessage();
+}
+
+function scrollToBottom() {
+    const body = document.getElementById('chat-body');
+    body.scrollTop = body.scrollHeight;
+}
+
+function startPolling() {
+    stopPolling();
+    chatPollInterval = setInterval(loadMessages, 3000); // 3s poll
+}
+
+function stopPolling() {
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    chatPollInterval = null;
+}
+
+// Auto init
+document.addEventListener('DOMContentLoaded', initChat);
+
+async function askAboutPet(petId, petName) {
+    // 1. Check login
+    const session = await checkSession();
+    if (!session.loggedIn) {
+        showWarmModal('Login Required', 'Please login to ask about pets.', '🔒', () => {
+            window.location.href = 'login.html';
+        });
+        return;
+    }
+
+    // 2. Open Chat Widget
+    const box = document.getElementById('chat-box');
+    if (!box.classList.contains('active')) {
+        await toggleChat();
+    }
+    
+    // Close the details modal if open
+    const detailsModal = document.getElementById('pet-details-modal');
+    if(detailsModal) detailsModal.classList.remove('active');
+
+    // 3. Find an Admin to talk to (or specific owner if we had that logic)
+    // For now, let's pick the first admin found in targets
+    const res = await apiCall('messages.php?action=get_targets');
+    let targetId = null;
+    let targetName = 'Admin';
+    
+    if (res.success && res.data.length > 0) {
+        // Prefer admin
+        const admin = res.data.find(u => u.role === 'admin');
+        if (admin) {
+            targetId = admin.id;
+            targetName = admin.name;
+        } else {
+            // Fallback to first contact (maybe a volunteer)
+            targetId = res.data[0].id;
+            targetName = res.data[0].name;
+        }
+    }
+    
+    if (!targetId) {
+        // If we couldn't find a target (e.g. Network Error), just open the box.
+        // The box will show the "Network Error" or "No contacts" state.
+        console.warn("No admin target found. Opening chat list.");
+        await toggleChat();
+        return;
+    }
+
+    // 4. Open Conversation
+    await openConversation(targetId, targetName);
+    
+    // 5. Pre-fill input
+    const input = document.getElementById('chat-input');
+    input.value = `Hi, I am interested in ${petName}. Is this pet still available?`;
+    input.focus();
+}
+

@@ -24,8 +24,7 @@ if ($method == 'GET') {
 }
 elseif ($method == 'POST') {
     // Add a new pet or Update an existing one
-    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-       
+    if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] !== 'admin' && $_SESSION['user']['role'] !== 'volunteer')) {
          
          if (!isset($_SESSION['user'])) {
              echo json_encode(["error" => "Unauthorized"]);
@@ -37,8 +36,8 @@ elseif ($method == 'POST') {
 
     if ($action === 'update') {
         // UPDATE PET
-        if ($_SESSION['user']['role'] !== 'admin') {
-            echo json_encode(["error" => "Unauthorized: Admins only"]);
+        if ($_SESSION['user']['role'] !== 'admin' && $_SESSION['user']['role'] !== 'volunteer') {
+            echo json_encode(["error" => "Unauthorized: Admins/Volunteers only"]);
             exit;
         }
 
@@ -107,8 +106,8 @@ elseif ($method == 'POST') {
     }
 }
 elseif ($method == 'DELETE') {
-    // Admins can remove pets
-    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
+    // Admins and Volunteers can remove pets
+    if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] != 'admin' && $_SESSION['user']['role'] != 'volunteer')) {
         echo json_encode(["error" => "Unauthorized"]);
         exit;
     }
