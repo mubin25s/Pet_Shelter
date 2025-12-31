@@ -46,6 +46,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = "Failed to create user.";
                 }
             }
+        } elseif ($_POST['action'] === 'seed_volunteers') {
+            $dummies = [
+                ['Sarah Jenkins', 'sarah@paws.com', 'volunteer'],
+                ['Mike Ross', 'mike@paws.com', 'volunteer'],
+                ['Emily Blunt', 'emily@paws.com', 'volunteer']
+            ];
+            $count = 0;
+            foreach ($dummies as $d) {
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
+                $stmt->execute([$d[1]]);
+                if ($stmt->fetchColumn() == 0) {
+                    $pass = password_hash('pass123', PASSWORD_BCRYPT);
+                    $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)")
+                        ->execute([$d[0], $d[1], $pass, $d[2]]);
+                    $count++;
+                }
+            }
+            $message = "Added $count dummy volunteers!";
         }
     }
 }
@@ -94,6 +112,7 @@ $users = $pdo->query("SELECT * FROM users ORDER BY id DESC")->fetchAll(PDO::FETC
                     <input type="text" name="password" placeholder="Password" required>
                     <select name="role" style="padding: 5px;">
                         <option value="admin">Admin</option>
+                        <option value="volunteer">Volunteer</option>
                         <option value="user">User</option>
                     </select>
                     <button type="submit" class="btn btn-green">Create User</button>
@@ -101,6 +120,14 @@ $users = $pdo->query("SELECT * FROM users ORDER BY id DESC")->fetchAll(PDO::FETC
             </form>
         </div>
 
+        <div class="section">
+            <h2>Alternatively: Quick Seed</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="seed_volunteers">
+                <button type="submit" class="btn btn-blue">Generate 3 Demo Volunteers</button>
+            </form>
+        </div>
+        
         <div class="section">
             <h2>2. Manage Existing Users</h2>
             <p>Find your user below and use the controls to fix credentials or roles.</p>
@@ -121,7 +148,7 @@ $users = $pdo->query("SELECT * FROM users ORDER BY id DESC")->fetchAll(PDO::FETC
                         <td><?= htmlspecialchars($user['name']) ?></td>
                         <td><?= htmlspecialchars($user['email']) ?></td>
                         <td>
-                            <span style="font-weight: bold; color: <?= $user['role'] == 'admin' ? '#dc3545' : '#28a745' ?>">
+                            <span style="font-weight: bold; color: <?= $user['role'] == 'admin' ? '#dc3545' : ($user['role'] == 'volunteer' ? '#fd7e14' : '#28a745') ?>">
                                 <?= strtoupper($user['role']) ?>
                             </span>
                         </td>
@@ -132,11 +159,13 @@ $users = $pdo->query("SELECT * FROM users ORDER BY id DESC")->fetchAll(PDO::FETC
                                     <input type="hidden" name="action" value="update_role">
                                     <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
                                     <?php if ($user['role'] == 'user'): ?>
-                                        <input type="hidden" name="role" value="admin">
-                                        <button type="submit" class="btn btn-red">Make Admin</button>
+                                        <button type="submit" name="role" value="admin" class="btn btn-red">Make Admin</button>
+                                        <button type="submit" name="role" value="volunteer" class="btn btn-green">Make Volunteer</button>
+                                    <?php elseif ($user['role'] == 'volunteer'): ?>
+                                        <button type="submit" name="role" value="user" class="btn btn-blue">Make User</button>
+                                        <button type="submit" name="role" value="admin" class="btn btn-red">Make Admin</button>
                                     <?php else: ?>
-                                        <input type="hidden" name="role" value="user">
-                                        <button type="submit" class="btn btn-blue">Make User</button>
+                                        <button type="submit" name="role" value="user" class="btn btn-blue">Make User</button>
                                     <?php endif; ?>
                                 </form>
 

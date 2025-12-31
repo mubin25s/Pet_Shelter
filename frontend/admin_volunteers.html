@@ -95,9 +95,19 @@
 
         async function loadVolunteers() {
             const list = document.getElementById('vol-list');
-            const data = await apiCall('misc.php?type=create_volunteer');
+            let data;
+            try {
+                data = await apiCall('misc.php?type=create_volunteer');
+            } catch (e) {
+                data = { success: false, error: 'Network Error' };
+            }
             
-            if (!data || data.length === 0) {
+            if (data && data.error) {
+                list.innerHTML = `<p style="color:red">Error loading volunteers: ${data.error}</p>`;
+                return;
+            }
+            
+            if (!Array.isArray(data) || data.length === 0) {
                 list.innerHTML = '<p>No volunteers found.</p>';
                 return;
             }

@@ -8,11 +8,24 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
-$origin = $_SERVER['HTTP_ORIGIN'] ?? 'http://localhost';
-header("Access-Control-Allow-Origin: $origin");
+$allowed_origins = [
+    'http://localhost',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'http://127.0.0.1:8080' // Common VS Code Live Server ports
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+} else {
+    // Fallback for non-browser or other tools, but be careful
+    header("Access-Control-Allow-Origin: *"); 
+}
+
 header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -61,24 +74,36 @@ elseif ($action == 'login' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = $data['email'];
     $password = $data['password'];
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$user) {
-        echo json_encode(["success" => false, "error" => "User not registered", "code" => "USER_NOT_FOUND"]);
-    } elseif (password_verify($password, $user['password'])) {
-        $_SESSION['user'] = [
-            'id' => $user['id'],
-            'name' => $user['name'],
-            'email' => $user['email'],
-            'role' => $user['role']
-        ];
-        logActivity($pdo, $user['id'], 'login', 'User logged in');
-        echo json_encode(["success" => true, "role" => $user['role']]);
-        http_response_code(200);
-    } else {
-        echo json_encode(["success" => false, "error" => "Write password correctly", "code" => "INVALID_PASSWORD"]);
+        if (!$user) {
+            echo json_encode(["success" => false, "error" => "User not registered", "code" => "USER_NOT_FOUND"]);
+        } elseif (password_verify($password, $user['password'])) {
+            $_SESSION['user'] = [
+                'id' => $user['id'],
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'role' => $user['role']
+            ];
+            logActivity($pdo, $user['id'], 'login', 'User logged in');
+            echo json_encode(["success" => true, "role" => $user['role']]);
+            http_response_code(200);
+        } else {
+            echo json_encode(["success" => false, "error" => "Incorrect password", "code" => "INVALID_PASSWORD"]);
+        }
+    } catch (Exception $e) {
+        $msg = $e->getMessage();
+        $code = "DB_ERROR";
+        // Check for missing table error
+        if (strpos($msg, "Base table or view not found") !== false) {
+             $msg = "Database tables are missing. Please run setup_db.php";
+             $code = "MISSING_TABLES";
+        }
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => $msg, "code" => $code]);
     }
 }
 elseif ($action == 'check_session') {

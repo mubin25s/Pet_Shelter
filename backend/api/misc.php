@@ -190,8 +190,22 @@ elseif ($type == 'create_volunteer') {
         }
     }
     elseif ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_SESSION['user']) && $_SESSION['user']['role'] == 'admin') {
-        $vols = $pdo->query("SELECT id, name, email, age, gender, created_at FROM users WHERE role = 'volunteer'")->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode($vols);
+        try {
+            $stmt = $pdo->query("SELECT id, name, email, age, gender, created_at FROM users WHERE role = 'volunteer'");
+            if ($stmt) {
+                echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+            } else {
+                echo json_encode(["error" => "Database Query Failed: " . implode(" ", $pdo->errorInfo())]);
+            }
+        } catch (Exception $e) {
+            echo json_encode(["error" => "Exception: " . $e->getMessage()]);
+        }
+    }
+    elseif ($_SERVER['REQUEST_METHOD'] == 'GET') {
+         // Handle unauthorized or missing session for GET
+         if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
+             echo json_encode(["error" => "Unauthorized access to volunteers list"]);
+         }
     }
 }
 elseif ($type == 'remove_volunteer') {

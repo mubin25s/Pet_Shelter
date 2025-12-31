@@ -15,43 +15,55 @@ banner.style.padding = '10px';
 banner.style.zIndex = '9999';
 banner.style.fontSize = '14px';
 banner.innerText = 'Initializing...';
+banner.style.display = 'none'; // Start hidden
 document.body.appendChild(banner);
+
+// Only show if initialization takes longer than 500ms
+const bannerTimeout = setTimeout(() => {
+    if (document.getElementById('debug-banner')) {
+        banner.style.display = 'block';
+    }
+}, 500);
 
 function updateBanner(msg, color) {
     if (banner) {
+        banner.style.display = 'block'; // Force show on update (errors, etc)
         banner.innerText = msg;
         banner.style.background = color;
     }
 }
 
 async function findBackendUrl() {
+    console.log("Searching for backend...");
     const candidates = [
-        'http://localhost:8000/backend/api/',        // Priority: Match Standard Browser URL
-        'http://127.0.0.1:8000/backend/api/',  // Fallback
-        'http://localhost/Pet_Shelter/backend/api/', // XAMPP
-        'http://localhost:8080/Pet_Shelter/backend/api/'
+        'http://localhost/Pet_Shelter/backend/api/',   
+        'http://localhost:8080/Pet_Shelter/backend/api/', 
+        'http://localhost:8000/backend/api/',          
+        'http://127.0.0.1/Pet_Shelter/backend/api/',   
     ];
 
-    for (const url of candidates) {
+    const check = async (url) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000); 
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1000); // 1s timeout
-            
-            const res = await fetch(url + 'test_connection.php', { 
-                method: 'GET',
-                signal: controller.signal
-            });
+            const res = await fetch(url + 'test_connection.php', { method: 'GET', signal: controller.signal });
             clearTimeout(timeoutId);
-            
-            if (res.ok) {
-                console.log("Found Backend at:", url);
-                return url;
-            }
-        } catch (e) { 
-            // Continue to next candidate
+            if (res.ok) return url;
+            throw new Error(`Status ${res.status}`);
+        } catch (e) {
+            clearTimeout(timeoutId);
+            throw e;
         }
+    };
+
+    try {
+        const validUrl = await Promise.any(candidates.map(check));
+        console.log("%c Found Backend at: " + validUrl, "color: green; font-weight: bold;");
+        return validUrl;
+    } catch (err) {
+        console.error("Could not find any reachable backend.");
+        return null;
     }
-    return null;
 }
 
 async function apiCall(endpoint, method = 'GET', data = null) {
@@ -90,8 +102,8 @@ async function apiCall(endpoint, method = 'GET', data = null) {
         baseUrl = await findBackendUrl();
         
         if (!baseUrl) {
-             // Fallback to 8000 just to show a meaningful error path if discovery fails
-             baseUrl = 'http://localhost:8000/backend/api/'; 
+             // Fallback to Standard XAMPP path if discovery fails, so the error message makes sense for XAMPP users
+             baseUrl = 'http://localhost/Pet_Shelter/backend/api/'; 
         }
 
         const response = await fetch(baseUrl + endpoint, options);
@@ -219,10 +231,9 @@ function updateNav(loggedIn, user) {
         </div>
     `;
     
-    // Only show Donate to non-admin or public
-    if (!loggedIn || (loggedIn && user.role !== 'admin')) {
-        html += `<a href="donate.html">Donate</a>`;
-    }
+    
+    // Donate option removed from global nav as per request. 
+    // It remains available in the Volunteer Panel.
     
     if (loggedIn) {
         if (user.role === 'admin') {
