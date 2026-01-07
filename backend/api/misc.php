@@ -15,35 +15,7 @@ ob_start();
 require_once '../config/db.php';
 ob_clean();
 
-// --- Lazy Schema Updates ---
-try {
-    // Users: Add Age and Gender
-    $cols = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
-    if (!in_array('age', $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN age INT");
-    if (!in_array('gender', $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN gender VARCHAR(20)");
-
-    // Expenses: Add Status, Requested_By, Reason
-    $cols = $pdo->query("SHOW COLUMNS FROM expenses")->fetchAll(PDO::FETCH_COLUMN);
-    if (!in_array('status', $cols)) {
-        $pdo->exec("ALTER TABLE expenses ADD COLUMN status VARCHAR(20) DEFAULT 'approved'");
-        // Mark existing as approved
-        $pdo->exec("UPDATE expenses SET status = 'approved' WHERE status IS NULL"); 
-    }
-    if (!in_array('requested_by', $cols)) $pdo->exec("ALTER TABLE expenses ADD COLUMN requested_by INT");
-    
-    // Users: Fix Role to be flexible (VARCHAR) instead of ENUM if it causes issues
-    $pdo->exec("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) DEFAULT 'user'");
-    
-    // Activity Logs Table
-    $pdo->exec("CREATE TABLE IF NOT EXISTS activity_logs (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
-        action VARCHAR(50),
-        details TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )");
-    
-} catch (Exception $e) { /* Ignore */ }
+// --- Lazy Schema Updates Removed (Using Supabase SQL Schema) ---
 
 function logActivity($pdo, $user_id, $action, $details = '') {
     try {
@@ -124,16 +96,6 @@ if ($type == 'rescue') {
     }
 }
 elseif ($type == 'payment_methods') {
-    // Lazy Schema: Ensure table exists
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS user_payment_methods (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            type VARCHAR(50),
-            provider VARCHAR(50),
-            display_info VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )");
     } catch (Exception $e) {}
 
 
@@ -238,13 +200,7 @@ elseif ($type == 'activity_logs') {
 }
 
 elseif ($type == 'donation') {
-    // Lazy Schema Migration: Ensure payment_method column exists
-    try {
-        $check = $pdo->query("SHOW COLUMNS FROM donations LIKE 'payment_method'");
-        if ($check->rowCount() == 0) {
-            $pdo->exec("ALTER TABLE donations ADD COLUMN payment_method VARCHAR(50) DEFAULT 'Manual'");
-        }
-    } catch (Exception $e) { /* Ignore if already exists/error */ }
+    } catch (Exception $e) { /* Ignore */ }
 
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data = json_decode(file_get_contents("php://input"), true);

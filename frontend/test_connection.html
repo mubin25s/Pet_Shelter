@@ -34,7 +34,7 @@
 
             } catch (e) {
                 log(`Fetch Error: ${e.message}`, 'red');
-                log(`Likely cause: File opened directly (file://) or XAMPP not running.`, 'orange');
+                log(`Likely cause: File opened directly (file://) or backend server is not running.`, 'orange');
             }
         }
         test();

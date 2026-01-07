@@ -102,7 +102,7 @@ async function apiCall(endpoint, method = 'GET', data = null) {
         baseUrl = await findBackendUrl();
         
         if (!baseUrl) {
-             // Fallback to Standard XAMPP path if discovery fails, so the error message makes sense for XAMPP users
+             // Fallback to Standard path
              baseUrl = 'http://localhost/Pet_Shelter/backend/api/'; 
         }
 
@@ -112,7 +112,7 @@ async function apiCall(endpoint, method = 'GET', data = null) {
         if (!response.ok) {
             const errText = await response.text();
             console.error(`HTTP Error: ${response.status} at ${response.url}`, errText);
-            return { success: false, error: `Server Error (${response.status}) at ${response.url}: ${errText || 'Check XAMPP/Console'}` };
+            return { success: false, error: `Server Error (${response.status}) at ${response.url}: ${errText || 'See Console'}` };
         }
 
         // 4. Handle JSON Errors (PHP Warnings mixed with JSON)
@@ -130,9 +130,9 @@ async function apiCall(endpoint, method = 'GET', data = null) {
         const fullUrl = baseUrl + endpoint;
         
         if (window.location.port === '5500') {
-             msg += ` Is start_backend.bat running? (Trying: ${fullUrl})`;
+             msg += ` Is the backend folder accessible? (Trying: ${fullUrl})`;
         } else {
-             msg += ` Is XAMPP running? Check Console for details. (Target: ${fullUrl})`;
+             msg += ` Please ensure your PHP server is running and database is connected. (Target: ${fullUrl})`;
         }
         return { success: false, error: msg };
     }

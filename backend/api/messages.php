@@ -22,12 +22,12 @@ function jsonResponse($success, $data = [], $error = null) {
     exit;
 }
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['user']['id'])) {
     jsonResponse(false, [], 'Unauthorized');
 }
 
-$current_user_id = $_SESSION['user_id'];
-$current_role = $_SESSION['role'] ?? 'user';
+$current_user_id = $_SESSION['user']['id'];
+$current_role = $_SESSION['user']['role'] ?? 'user';
 $action = $_GET['action'] ?? '';
 
 try {
@@ -113,7 +113,7 @@ try {
         $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Mark as read
-        $updateStmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ?");
+        $updateStmt = $pdo->prepare("UPDATE messages SET is_read = true WHERE sender_id = ? AND receiver_id = ?");
         $updateStmt->execute([$other_user_id, $current_user_id]);
         
         jsonResponse(true, $messages);
@@ -151,7 +151,7 @@ try {
         jsonResponse(true, ['message_id' => $userMsgId, 'auto_reply_sent' => ($current_role === 'user')]);
         
     } elseif ($action === 'check_unread') {
-         $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0");
+         $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = false");
          $stmt->execute([$current_user_id]);
          $count = $stmt->fetchColumn();
          jsonResponse(true, ['unread_count' => $count]);

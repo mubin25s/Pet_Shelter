@@ -1,8 +1,9 @@
 <?php
-$host = 'localhost';
-$user = 'root';
-$pass = '';
-$dbname = 'pet_shelter_db';
+$host = 'db.gviwyujcdrzcsnvifkzz.supabase.co'; 
+$port = '5432'; 
+$dbname = 'Pet_Shelter';
+$user = 'postgres';
+$pass = 'proportial duck'; // The password you created when starting the project
 
 // Ensure session is started with loose cookie settings for local dev
 if (session_status() === PHP_SESSION_NONE) {
@@ -22,15 +23,14 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 try {
-    $dsn = "mysql:host=$host;charset=utf8mb4";
+    // PGSQL Connection
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
     $pdo = new PDO($dsn, $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC); // Good practice
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     
-    // Check if database exists by trying to select it or create it
-    // Note: Creating DB inside common connect script is risky for production but fine for this dev setup
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
-    $pdo->exec("USE `$dbname`");
+    // Postgres doesn't need "USE db", it connects directly to the db name in DSN.
+    // Also removed CREATE DATABASE as Supabase manages that.
     
 } catch (PDOException $e) {
     // If the request is an AJAX/API request, return JSON

@@ -99,7 +99,7 @@ elseif ($action == 'login' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         $code = "DB_ERROR";
         // Check for missing table error
         if (strpos($msg, "Base table or view not found") !== false) {
-             $msg = "Database tables are missing. Please run setup_db.php";
+             $msg = "Database tables are missing. Please run the provided SQL script in your Supabase SQL Editor.";
              $code = "MISSING_TABLES";
         }
         http_response_code(500);

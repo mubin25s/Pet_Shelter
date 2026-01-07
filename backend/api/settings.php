@@ -15,23 +15,7 @@ ob_start();
 require_once '../config/db.php';
 ob_clean();
 
-// Ensure settings table exists
-$pdo->exec("CREATE TABLE IF NOT EXISTS settings (
-    id INT PRIMARY KEY DEFAULT 1,
-    contact_email VARCHAR(255),
-    contact_phone VARCHAR(50),
-    shelter_location TEXT,
-    about_text TEXT,
-    founder_name VARCHAR(255),
-    founder_image VARCHAR(255)
-)");
-
-// Insert default row if not exists
-$stmt = $pdo->query("SELECT COUNT(*) FROM settings");
-if ($stmt->fetchColumn() == 0) {
-    $pdo->exec("INSERT INTO settings (id, contact_email, contact_phone, shelter_location, about_text, founder_name, founder_image) 
-                VALUES (1, 'petshelter@gmail.com', '+088 0130 2910017', 'Ashulia, Savar,Dhaka', 'Welcome to Paws Shelter.', 'K.M. Fathum Mubin Sachcha', 'images/founder.png')");
-}
+// --- Settings Table managed via Supabase SQL ---
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $stmt = $pdo->query("SELECT * FROM settings WHERE id = 1");

@@ -57,11 +57,8 @@
             // 1. Test PHP Server (Port 8000)
             await testUrl('PHP Built-in Server', 'http://localhost:8000/backend/api/test_connection.php');
             
-            // 2. Test XAMPP (Standard)
-            await testUrl('XAMPP (Pet_Shelter)', 'http://localhost/Pet_Shelter/backend/api/test_connection.php');
-            
-            // 3. Test Direct File (Common Mistake)
-            await testUrl('XAMPP (Root)', 'http://localhost/backend/api/test_connection.php');
+            // 2. Test Standard Path
+            await testUrl('Standard Path', 'http://localhost/Pet_Shelter/backend/api/test_connection.php');
             
             // 4. Test Relative
             await testUrl('Relative Path', '../backend/api/test_connection.php');
