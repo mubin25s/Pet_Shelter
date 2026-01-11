@@ -1,9 +1,9 @@
 <?php
 $host = 'db.gviwyujcdrzcsnvifkzz.supabase.co'; 
 $port = '5432'; 
-$dbname = 'Pet_Shelter';
+$dbname = 'postgres'; // Supabase default
 $user = 'postgres';
-$pass = 'proportial duck'; // The password you created when starting the project
+$pass = 'proportial duck'; 
 
 // Ensure session is started with loose cookie settings for local dev
 if (session_status() === PHP_SESSION_NONE) {

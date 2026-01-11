@@ -22,7 +22,7 @@
         <h1>Pending Adoptions</h1>
         <div id="requests-list"></div>
     </div>
-    <script src="js/pet.js"></script>
+    <script src="js/pet.js?v=supabase_v10"></script>
     <script>
         checkSession().then(res => { if (!res.loggedIn || (res.user.role !== 'admin' && res.user.role !== 'volunteer')) window.location.href = 'login.html'; });
 

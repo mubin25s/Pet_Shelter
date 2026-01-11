@@ -31,9 +31,9 @@
             const results = document.getElementById('results');
             
             // Logic copied from pet.js to mimic real behavior
-            let baseUrl = 'http://localhost:8000/backend/api/'; 
-            if (window.location.port !== '5500') {
-                baseUrl = '../backend/api/';
+            let baseUrl = '../backend/api/'; 
+            if (window.location.port === '5500') {
+                baseUrl = 'http://localhost:8000/backend/api/';
             }
 
             const fullUrl = baseUrl + endpoint;

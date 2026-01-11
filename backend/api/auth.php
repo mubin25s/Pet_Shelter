@@ -10,6 +10,7 @@ session_set_cookie_params([
 session_start();
 $allowed_origins = [
     'http://localhost',
+    'http://localhost:3000',
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://127.0.0.1:8080' // Common VS Code Live Server ports

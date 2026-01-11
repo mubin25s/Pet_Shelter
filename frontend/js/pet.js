@@ -35,12 +35,18 @@ function updateBanner(msg, color) {
 
 async function findBackendUrl() {
     console.log("Searching for backend...");
+    
+    // Prioritize current host
+    const currentHost = window.location.origin;
     const candidates = [
+        currentHost + '/backend/api/',
+        currentHost + '/Pet_Shelter/backend/api/',
         'http://localhost/Pet_Shelter/backend/api/',   
-        'http://localhost:8080/Pet_Shelter/backend/api/', 
         'http://localhost:8000/backend/api/',          
-        'http://127.0.0.1/Pet_Shelter/backend/api/',   
     ];
+
+    // Remove duplicates
+    const uniqueCandidates = [...new Set(candidates)];
 
     const check = async (url) => {
         const controller = new AbortController();
@@ -48,8 +54,11 @@ async function findBackendUrl() {
         try {
             const res = await fetch(url + 'test_connection.php', { method: 'GET', signal: controller.signal });
             clearTimeout(timeoutId);
-            if (res.ok) return url;
-            throw new Error(`Status ${res.status}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.status === 'ok') return url;
+            }
+            throw new Error(`Invalid response`);
         } catch (e) {
             clearTimeout(timeoutId);
             throw e;
@@ -57,7 +66,7 @@ async function findBackendUrl() {
     };
 
     try {
-        const validUrl = await Promise.any(candidates.map(check));
+        const validUrl = await Promise.any(uniqueCandidates.map(check));
         console.log("%c Found Backend at: " + validUrl, "color: green; font-weight: bold;");
         return validUrl;
     } catch (err) {
