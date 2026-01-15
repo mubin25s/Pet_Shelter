@@ -1,46 +1,80 @@
-# 🐾 Pet Shelter — Shelter & Adoption Platform
+# 🐾 Pet Shelter
 
-**Pet_Shelter** is a full-stack web application designed to help manage pets in a shelter and support the adoption process. It includes both backend and frontend components, file uploads, and a database schema — making it a complete project for pet care and adoption management.
+**Pet Shelter** is a web-based shelter and adoption management platform designed to showcase pets, manage shelter data, and demonstrate a complete frontend–backend integrated project. The system focuses on clarity, structure, and real-world applicability for academic and portfolio use.
 
----
-
-## 📌 Table of Contents
-
-- [About](#about)
-- [Features](#features)
-- [Directory Structure](#directory-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Running the App](#running-the-app)
-- [Database](#database)
-- [Usage](#usage)
-- [Screenshots](#screenshots)
-- [Technologies Used](#technologies-used)
-- [Future Enhancements](#future-enhancements)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+🔗 **Live Demo:**  
+👉 https://mfathumsachcha-netizen.github.io/petshelter-Demo/
 
 ---
 
-## 🐶 About
+## 📖 Project Description
 
-This project is a **shelter and pet adoption platform** where users can view available pets, add pets (admin), and manage adoption information. It integrates frontend UI, backend API logic, file uploads, and a database schema, making it suitable as a capstone/project portfolio application.
+The Pet Shelter project simulates a real shelter environment where pets can be displayed with details and images. It combines frontend user interfaces with backend logic and database design, making it suitable for learning full-stack development concepts and showcasing practical implementation skills.
 
----
-
-## 🚀 Features
-
-✔ View list of pets  
-✔ Add new pets (admin)  
-✔ Upload pet profile images  
-✔ Adoption-related actions  
-✔ Structured backend API  
-✔ Frontend UI integrated with backend  
-✔ SQL schema included for database setup  
+This project emphasizes:
+- Clean UI presentation
+- Structured data handling
+- Image upload management
+- Database-driven architecture
 
 ---
 
-## 📁 Directory Structure
+## ✨ Key Features
+
+- Display pets available in the shelter  
+- Store and manage pet information  
+- Upload and manage pet images  
+- Organized backend logic  
+- SQL database schema included  
+- Frontend and backend separation  
+- Ready-to-demo project structure  
+
+---
+
+## 🗂️ Project Structure
+
+
+---
+
+## 🛠️ Technologies Used
+
+- HTML  
+- CSS  
+- JavaScript  
+- Backend server (Node.js / Express)  
+- SQL (Supabase / PostgreSQL compatible schema)  
+- Python (utility scripts)
+
+---
+
+## 🎯 Use Case
+
+- Academic projects  
+- Portfolio showcase  
+- Shelter management concept demo  
+- Full-stack learning reference  
+
+---
+
+## 🚀 Future Improvements
+
+- User authentication and roles  
+- Adoption request system  
+- Search and filtering  
+- Admin dashboard  
+- Email or notification integration  
+
+---
+
+## 📜 License
+
+This project is currently **unlicensed**. A license file can be added if distribution or open-source use is intended.
+
+---
+
+## 👤 Author
+
+**GitHub:** mubin25s  
+
+This project is maintained for learning, demonstration, and portfolio purposes.
 
