@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🐶 Pet Shelter & Adoption System
 
 A **full-featured web application** for managing adoptable pets, adoption requests, and shelter data.  
@@ -147,4 +146,3 @@ This project is currently **unlicensed**. A license file can be added if distrib
 
 This project is maintained for learning, demonstration, and portfolio purposes.
 
->>>>>>> 862e6c01aabcc2f69d49697481f1c4f9567bf3d4
