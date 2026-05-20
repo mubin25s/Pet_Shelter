@@ -8,7 +8,7 @@ Built with **PHP, Supabase, HTML, CSS, and JavaScript**, this project combines *
 **Pet Shelter** is a web-based shelter and adoption management platform designed to showcase pets, manage shelter data, and demonstrate a complete frontend–backend integrated project. The system focuses on clarity, structure, and real-world applicability for academic and portfolio use.
 
 🔗 **Live Demo:**  
-👉 https://mfathumsachcha-netizen.github.io/petshelter-Demo/
+👉 [https://mfathumsachcha-netizen.github.io/petshelter-Demo/](https://proportial-duck.github.io/petshelter-Demo/)
 
 ---
 
